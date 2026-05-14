@@ -1,0 +1,102 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 18 * * *' # nightly regression at 01:00 ICT
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'stage'
+        type: choice
+        options: [local, stage, prod]
+      suite:
+        description: 'Suite to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options: [smoke, e2e, regression, api, visual, all]
+
+concurrency:
+  group: e2e-${{ github.ref }}-${{ github.event.inputs.environment || 'stage' }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.suite }} on ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - smoke
+        browser:
+          - chromium
+        include:
+          - suite: smoke
+            browser: firefox
+          - suite: smoke
+            browser: webkit
+    env:
+      ENV: ${{ github.event.inputs.environment || 'stage' }}
+      BASE_URL: ${{ secrets.BASE_URL }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      ADMIN_USER: ${{ secrets.ADMIN_USER }}
+      ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+      CASHIER_USER: ${{ secrets.CASHIER_USER }}
+      CASHIER_PASS: ${{ secrets.CASHIER_PASS }}
+      PAYMENT_GATEWAY_URL: ${{ secrets.PAYMENT_GATEWAY_URL }}
+      PAYMENT_MERCHANT_ID: ${{ secrets.PAYMENT_MERCHANT_ID }}
+      PAYMENT_API_KEY: ${{ secrets.PAYMENT_API_KEY }}
+      PLAYWRIGHT_RUN_ID: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci --ignore-scripts
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npx playwright test --project=${{ matrix.browser }} tests/${{ matrix.suite }}
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report-${{ matrix.suite }}-${{ matrix.browser }}
+          path: reports/html
+          retention-days: 14
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ matrix.suite }}-${{ matrix.browser }}
+          path: reports/allure-results
+          retention-days: 14
+
+      - name: Upload traces & videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-${{ matrix.suite }}-${{ matrix.browser }}
+          path: test-results
+          retention-days: 14

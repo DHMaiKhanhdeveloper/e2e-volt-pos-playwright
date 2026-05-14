@@ -1,0 +1,10 @@
+node_modules
+test-results
+reports
+playwright-report
+.git
+.github
+*.log
+.env
+.env.*
+!configs/env/.env.example

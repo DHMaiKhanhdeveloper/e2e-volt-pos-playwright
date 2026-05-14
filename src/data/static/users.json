@@ -1,0 +1,23 @@
+{
+  "$schema": "../../schemas/user.schema.json",
+  "users": [
+    {
+      "role": "admin",
+      "username": "admin@example.com",
+      "displayName": "Test Admin",
+      "permissions": ["payment.create", "payment.refund", "report.view", "user.manage"]
+    },
+    {
+      "role": "cashier",
+      "username": "cashier@example.com",
+      "displayName": "Test Cashier",
+      "permissions": ["payment.create", "payment.view"]
+    },
+    {
+      "role": "manager",
+      "username": "manager@example.com",
+      "displayName": "Test Manager",
+      "permissions": ["payment.create", "payment.refund", "report.view"]
+    }
+  ]
+}

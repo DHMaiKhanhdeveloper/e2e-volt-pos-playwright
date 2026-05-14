@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://volt-pos/schemas/user.schema.json",
+  "title": "TestUserCatalog",
+  "type": "object",
+  "required": ["users"],
+  "properties": {
+    "users": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["role", "username", "permissions"],
+        "properties": {
+          "role":        { "type": "string" },
+          "username":    { "type": "string", "format": "email" },
+          "displayName": { "type": "string" },
+          "permissions": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

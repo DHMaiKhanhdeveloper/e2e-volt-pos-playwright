@@ -1,0 +1,215 @@
+{
+  "config": { "version": "1.48.0", "rootDir": "/app" },
+  "stats": {
+    "startTime": "2026-05-14T03:12:45.000Z",
+    "duration": 184320,
+    "expected": 18,
+    "unexpected": 2,
+    "flaky": 1,
+    "skipped": 1
+  },
+  "suites": [
+    {
+      "title": "tests/smoke/login.smoke.spec.ts",
+      "file": "tests/smoke/login.smoke.spec.ts",
+      "suites": [
+        {
+          "title": "Auth — login @smoke @auth",
+          "specs": [
+            {
+              "title": "admin can log in and reach the dashboard",
+              "ok": true,
+              "tags": ["@smoke", "@auth"],
+              "file": "tests/smoke/login.smoke.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [{ "status": "passed", "duration": 4231 }]
+                },
+                {
+                  "projectName": "firefox",
+                  "expectedStatus": "passed",
+                  "results": [{ "status": "passed", "duration": 5102 }]
+                }
+              ]
+            },
+            {
+              "title": "rejects invalid credentials",
+              "ok": true,
+              "tags": ["@smoke", "@auth"],
+              "file": "tests/smoke/login.smoke.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [{ "status": "passed", "duration": 2310 }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/e2e/payment.e2e.spec.ts",
+      "file": "tests/e2e/payment.e2e.spec.ts",
+      "suites": [
+        {
+          "title": "Payments — happy path @regression @payment",
+          "specs": [
+            {
+              "title": "cashier can create a card payment and see the receipt",
+              "ok": false,
+              "tags": ["@regression", "@payment"],
+              "file": "tests/e2e/payment.e2e.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "failed",
+                      "duration": 32102,
+                      "errors": [
+                        {
+                          "message": "Error: Timed out 10000ms waiting for expect(locator).toBeVisible()\nLocator: getByTestId('payment-receipt-modal')"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/regression/paymentRefund.regression.spec.ts",
+      "file": "tests/regression/paymentRefund.regression.spec.ts",
+      "suites": [
+        {
+          "title": "Payments — refund flow @regression @payment",
+          "specs": [
+            {
+              "title": "admin can refund a captured payment",
+              "ok": true,
+              "tags": ["@regression", "@payment"],
+              "file": "tests/regression/paymentRefund.regression.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "failed",
+                      "duration": 18200,
+                      "errors": [{ "message": "Network timeout — retrying" }]
+                    },
+                    { "status": "passed", "duration": 14500 }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/api/auth.api.spec.ts",
+      "file": "tests/api/auth.api.spec.ts",
+      "suites": [
+        {
+          "title": "API — auth @api @smoke",
+          "specs": [
+            {
+              "title": "POST /auth/login returns access token for valid creds",
+              "ok": true,
+              "tags": ["@api", "@smoke"],
+              "file": "tests/api/auth.api.spec.ts",
+              "tests": [
+                {
+                  "projectName": "api",
+                  "expectedStatus": "passed",
+                  "results": [{ "status": "passed", "duration": 412 }]
+                }
+              ]
+            },
+            {
+              "title": "POST /auth/login rejects bad password",
+              "ok": true,
+              "tags": ["@api", "@smoke"],
+              "file": "tests/api/auth.api.spec.ts",
+              "tests": [
+                {
+                  "projectName": "api",
+                  "expectedStatus": "passed",
+                  "results": [{ "status": "passed", "duration": 380 }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/api/payment.api.spec.ts",
+      "file": "tests/api/payment.api.spec.ts",
+      "suites": [
+        {
+          "title": "API — payments @api @regression",
+          "specs": [
+            {
+              "title": "POST /payments creates a payment matching the schema",
+              "ok": false,
+              "tags": ["@api", "@regression"],
+              "file": "tests/api/payment.api.spec.ts",
+              "tests": [
+                {
+                  "projectName": "api",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "failed",
+                      "duration": 5210,
+                      "errors": [
+                        {
+                          "message": "Schema validation failed for POST /payments:\n  - /currency must match pattern \"^[A-Z]{3}$\""
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/visual/login.visual.spec.ts",
+      "file": "tests/visual/login.visual.spec.ts",
+      "suites": [
+        {
+          "title": "Visual — login @visual",
+          "specs": [
+            {
+              "title": "login page matches baseline",
+              "ok": true,
+              "tags": ["@visual"],
+              "file": "tests/visual/login.visual.spec.ts",
+              "tests": [
+                {
+                  "projectName": "visual",
+                  "expectedStatus": "skipped",
+                  "results": [{ "status": "skipped", "duration": 0 }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

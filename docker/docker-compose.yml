@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  e2e:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: e2e-volt-pos-test:latest
+    environment:
+      ENV: ${ENV:-stage}
+      BASE_URL: ${BASE_URL}
+      API_BASE_URL: ${API_BASE_URL}
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_PASS: ${ADMIN_PASS}
+      CASHIER_USER: ${CASHIER_USER}
+      CASHIER_PASS: ${CASHIER_PASS}
+    volumes:
+      - ../reports:/app/reports
+      - ../test-results:/app/test-results
+    command: ["npx", "playwright", "test", "tests/smoke"]

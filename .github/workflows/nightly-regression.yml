@@ -1,0 +1,42 @@
+name: Nightly Regression
+
+on:
+  schedule:
+    - cron: '0 17 * * *' # 00:00 ICT
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ENV: stage
+      BASE_URL: ${{ secrets.BASE_URL }}
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      ADMIN_USER: ${{ secrets.ADMIN_USER }}
+      ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+      CASHIER_USER: ${{ secrets.CASHIER_USER }}
+      CASHIER_PASS: ${{ secrets.CASHIER_PASS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps
+      - run: npm run test:regression
+
+      - name: Generate Allure report
+        if: always()
+        run: |
+          npm i -g allure-commandline
+          allure generate reports/allure-results --clean -o reports/allure-report
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-allure-report
+          path: reports/allure-report
+          retention-days: 30

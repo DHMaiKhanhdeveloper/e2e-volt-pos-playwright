@@ -1,0 +1,12 @@
+{
+  "valid": [
+    { "name": "Small CARD purchase", "amount": 50000, "currency": "VND", "method": "CARD" },
+    { "name": "QR mid-range",          "amount": 250000, "currency": "VND", "method": "QR" },
+    { "name": "Wallet large",          "amount": 1500000, "currency": "VND", "method": "WALLET" }
+  ],
+  "invalid": [
+    { "name": "Negative amount",   "amount": -100,    "currency": "VND", "method": "CARD", "expectedError": "INVALID_AMOUNT" },
+    { "name": "Zero amount",       "amount": 0,       "currency": "VND", "method": "CARD", "expectedError": "INVALID_AMOUNT" },
+    { "name": "Unsupported currency", "amount": 100, "currency": "ZZZ", "method": "CARD", "expectedError": "UNSUPPORTED_CURRENCY" }
+  ]
+}
