@@ -37,5 +37,6 @@ export const SummaryCards = ({ summary }: Props) => (
       hint="passed + flaky / (total − skipped)"
     />
     <Card label="Total duration" value={fmtDuration(summary.totalDurationMs)} tone="info" />
+    <Card label="Recordings" value={summary.withVideo} tone="info" hint="Tests with video" />
   </section>
 );

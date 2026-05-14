@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { FlatTest, Outcome } from '../types';
 import { fmtDuration, shortFile } from '../utils/format';
+import { VideoPlayer } from './VideoPlayer';
 
 interface Props {
   tests: FlatTest[];
@@ -150,6 +151,11 @@ export const TestTable = ({ tests }: Props) => {
                           ↻ {t.retries}
                         </span>
                       )}
+                      {t.video && (
+                        <span className="badge badge-info" title="Video recording available">
+                          ▶ video
+                        </span>
+                      )}
                     </td>
                     <td>
                       <div className="cell-title">{t.title}</div>
@@ -167,10 +173,22 @@ export const TestTable = ({ tests }: Props) => {
                       ))}
                     </td>
                   </tr>
-                  {isOpen && t.errorMessage && (
+                  {isOpen && (t.video || t.errorMessage || t.screenshots.length > 0) && (
                     <tr className="row-detail">
                       <td colSpan={5}>
-                        <pre>{t.errorMessage}</pre>
+                        <div className="detail-grid">
+                          {t.video && (
+                            <VideoPlayer
+                              key={`${t.id}-video`}
+                              video={t.video}
+                              poster={t.screenshots[0]?.url}
+                              className="detail-video"
+                            />
+                          )}
+                          {t.errorMessage && (
+                            <pre className="detail-error">{t.errorMessage}</pre>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )}

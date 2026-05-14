@@ -9,12 +9,21 @@ export interface PwTestError {
   location?: { file: string; line: number; column: number };
 }
 
+export interface PwAttachment {
+  name: string;
+  contentType: string;
+  path?: string;
+  body?: string;
+}
+
 export interface PwTestResult {
   status: PwStatus;
   duration: number;
   errors?: PwTestError[];
   retry?: number;
   workerIndex?: number;
+  attachments?: PwAttachment[];
+  startTime?: string;
 }
 
 export interface PwTest {
@@ -62,6 +71,13 @@ export interface PwReport {
 
 export type Outcome = 'passed' | 'failed' | 'flaky' | 'skipped';
 
+export interface TestArtifact {
+  /** URL the dashboard should request (rewritten so the Vite middleware can serve it). */
+  url: string;
+  name: string;
+  contentType: string;
+}
+
 export interface FlatTest {
   id: string;
   file: string;
@@ -72,7 +88,11 @@ export interface FlatTest {
   durationMs: number;
   retries: number;
   errorMessage?: string;
+  errorStack?: string;
   tags: string[];
+  video?: TestArtifact;
+  screenshots: TestArtifact[];
+  trace?: TestArtifact;
 }
 
 export interface Summary {
@@ -84,4 +104,5 @@ export interface Summary {
   passRate: number;
   totalDurationMs: number;
   startedAt?: string;
+  withVideo: number;
 }

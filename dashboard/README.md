@@ -1,25 +1,48 @@
 # E2E Dashboard
 
-A lightweight React + Vite app that reads the Playwright JSON report and renders a pass/fail dashboard.
+A React + Vite app that reads the Playwright JSON report and renders a pass/fail dashboard **with embedded video playback** for every test run.
 
 ## What it shows
 
-- **Stat cards** — total / passed / failed / flaky / skipped / pass-rate / total duration
-- **Donut chart** — outcome distribution
-- **Stacked bars** — per project (chromium/firefox/webkit/api/…) and per spec file
-- **Test table** with:
-  - Filter by outcome, project, or free-text (title / suite / file / tag)
-  - Sort by outcome, title, project, duration
-  - Click a row to expand the failure stack trace
+3 tabs:
 
-## Where the data comes from
+| Tab | What's there |
+| --- | --- |
+| **Overview** | Stat cards (total / passed / failed / flaky / skipped / pass-rate / total duration / recordings) + donut chart + per-project bars + per-file bars |
+| **Recordings** | Video gallery — click any test to watch its recording, see failure stack, screenshots, trace download |
+| **All tests** | Filterable & sortable table — click a row to expand the inline video and error message |
 
-The dashboard reads `/results.json`. The Vite dev server middleware in [vite.config.ts](vite.config.ts) maps that URL to:
+Each test exposes:
+- Embedded `<video>` player (1× / 1.5× / 2× / 4× speed selector, download link)
+- Poster image from the failure screenshot (if any)
+- Error message + stack trace (for failed/flaky tests)
+- Trace zip download
 
-1. `../reports/json/results.json` if it exists (i.e. you've run `npm test` in the parent project)
-2. `public/sample-results.json` as fallback, so the UI still renders on a fresh clone
+## Where the data + videos come from
 
-You can also load any other Playwright JSON report by clicking **"Open file…"** in the header.
+The Vite dev server has two middlewares:
+
+| Route | Resolves to |
+| --- | --- |
+| `GET /results.json` | `../reports/json/results.json` (or `public/sample-results.json` fallback) |
+| `GET /test-results/*` | `../test-results/*` (or `public/sample-videos/*` fallback) |
+
+So when you run `npm test` at the project root, videos under `test-results/<test-name>/video.webm` become immediately viewable in the dashboard.
+
+## Enabling video for every test
+
+In the parent project's [playwright.config.ts](../playwright.config.ts):
+
+```ts
+use: {
+  trace: 'on',
+  screenshot: 'on',
+  video: (process.env.VIDEO ?? 'on') as 'on' | 'retain-on-failure' | 'off',
+}
+```
+
+- Default: record video for every test (pass + fail)
+- CI cost-sensitive: `VIDEO=retain-on-failure npm test` keeps only failures
 
 ## Run it
 
@@ -36,18 +59,38 @@ npm run build
 npm run preview      # http://localhost:4173
 ```
 
-## Wiring with the Playwright project
+## Architecture
 
-The parent `playwright.config.ts` already includes:
-
-```ts
-['json', { outputFile: 'reports/json/results.json' }],
+```
+src/
+├── App.tsx                       # 3-tab shell
+├── types.ts                      # Playwright JSON shape + FlatTest + TestArtifact
+├── hooks/useResults.ts           # Loads /results.json, exposes summary + tests
+├── utils/
+│   ├── parseResults.ts           # Flattens suites, extracts video/screenshot/trace artifacts
+│   └── format.ts
+└── components/
+    ├── Header.tsx                # File picker, reload
+    ├── SummaryCards.tsx          # 8 KPI cards (including "Recordings" count)
+    ├── DonutChart.tsx            # SVG pass/fail donut
+    ├── GroupedBar.tsx            # Stacked bars by project / by file
+    ├── TestRecordings.tsx        # Video gallery with outcome filter
+    ├── TestTable.tsx             # Filterable table with inline video on expand
+    └── VideoPlayer.tsx           # <video> + speed picker + 404 fallback
 ```
 
-so any run (`npm test`, `npm run test:smoke`, CI) updates the file the dashboard reads. Click **⟳ Reload** in the header after a run to refresh the view.
+## Sample mode
+
+If no run has happened yet, the dashboard renders [public/sample-results.json](public/sample-results.json) which includes:
+- A passing **createOrder-cash** flow
+- A failing **createOrder-multi-services** flow with mock error message
+- A flaky **createOrder-single** flow (1st attempt fail, 2nd pass)
+- Other smoke / API examples
+
+The video player gracefully degrades to a "No recording at …" placeholder when the actual `.webm` file doesn't exist yet. Drop real videos into `public/sample-videos/<name>/video.webm` to make the demo fully functional offline.
 
 ## Notes
 
-- The dashboard never writes or modifies anything — it's read-only.
-- No charting library — bars and donut are plain SVG/CSS, so the bundle stays tiny.
-- TypeScript-strict throughout. Shape of the Playwright JSON is captured in [src/types.ts](src/types.ts).
+- Built with zero chart libraries — donut and bars are plain SVG / CSS
+- TypeScript-strict throughout, ~160 KB minified bundle
+- Read-only: never modifies project files or the Playwright report

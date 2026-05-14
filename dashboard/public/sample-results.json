@@ -10,70 +10,55 @@
   },
   "suites": [
     {
-      "title": "tests/smoke/login.smoke.spec.ts",
-      "file": "tests/smoke/login.smoke.spec.ts",
+      "title": "tests/smoke/voltPos.smoke.spec.ts",
+      "file": "tests/smoke/voltPos.smoke.spec.ts",
       "suites": [
         {
-          "title": "Auth — login @smoke @auth",
+          "title": "Volt POS — smoke @smoke",
           "specs": [
             {
-              "title": "admin can log in and reach the dashboard",
+              "title": "home page loads with title, staff search, and service search",
               "ok": true,
-              "tags": ["@smoke", "@auth"],
-              "file": "tests/smoke/login.smoke.spec.ts",
-              "tests": [
-                {
-                  "projectName": "chromium",
-                  "expectedStatus": "passed",
-                  "results": [{ "status": "passed", "duration": 4231 }]
-                },
-                {
-                  "projectName": "firefox",
-                  "expectedStatus": "passed",
-                  "results": [{ "status": "passed", "duration": 5102 }]
-                }
-              ]
-            },
-            {
-              "title": "rejects invalid credentials",
-              "ok": true,
-              "tags": ["@smoke", "@auth"],
-              "file": "tests/smoke/login.smoke.spec.ts",
-              "tests": [
-                {
-                  "projectName": "chromium",
-                  "expectedStatus": "passed",
-                  "results": [{ "status": "passed", "duration": 2310 }]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "tests/e2e/payment.e2e.spec.ts",
-      "file": "tests/e2e/payment.e2e.spec.ts",
-      "suites": [
-        {
-          "title": "Payments — happy path @regression @payment",
-          "specs": [
-            {
-              "title": "cashier can create a card payment and see the receipt",
-              "ok": false,
-              "tags": ["@regression", "@payment"],
-              "file": "tests/e2e/payment.e2e.spec.ts",
+              "tags": ["@smoke"],
+              "file": "tests/smoke/voltPos.smoke.spec.ts",
               "tests": [
                 {
                   "projectName": "chromium",
                   "expectedStatus": "passed",
                   "results": [
                     {
-                      "status": "failed",
-                      "duration": 32102,
-                      "errors": [
+                      "status": "passed",
+                      "duration": 4231,
+                      "attachments": [
                         {
-                          "message": "Error: Timed out 10000ms waiting for expect(locator).toBeVisible()\nLocator: getByTestId('payment-receipt-modal')"
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/smoke-home-page/video.webm"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "displays staff members",
+              "ok": true,
+              "tags": ["@smoke"],
+              "file": "tests/smoke/voltPos.smoke.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "duration": 2310,
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/smoke-staff/video.webm"
                         }
                       ]
                     }
@@ -86,17 +71,78 @@
       ]
     },
     {
-      "title": "tests/regression/paymentRefund.regression.spec.ts",
-      "file": "tests/regression/paymentRefund.regression.spec.ts",
+      "title": "tests/e2e/orders/createOrder.e2e.spec.ts",
+      "file": "tests/e2e/orders/createOrder.e2e.spec.ts",
       "suites": [
         {
-          "title": "Payments — refund flow @regression @payment",
+          "title": "Orders — create order @regression @payment",
           "specs": [
             {
-              "title": "admin can refund a captured payment",
+              "title": "creates an order with cash payment and completes it",
               "ok": true,
               "tags": ["@regression", "@payment"],
-              "file": "tests/regression/paymentRefund.regression.spec.ts",
+              "file": "tests/e2e/orders/createOrder.e2e.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "duration": 18420,
+                      "startTime": "2026-05-14T03:13:02.000Z",
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/createOrder-cash-pass/video.webm"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/app/test-results/createOrder-cash-pass/final.png"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/app/test-results/createOrder-cash-pass/trace.zip"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "does not allow pay without selecting a service",
+              "ok": true,
+              "tags": ["@regression", "@payment"],
+              "file": "tests/e2e/orders/createOrder.e2e.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "duration": 5210,
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/createOrder-noservice/video.webm"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "creates an order with multiple services",
+              "ok": false,
+              "tags": ["@regression", "@payment"],
+              "file": "tests/e2e/orders/createOrder.e2e.spec.ts",
               "tests": [
                 {
                   "projectName": "chromium",
@@ -104,10 +150,68 @@
                   "results": [
                     {
                       "status": "failed",
-                      "duration": 18200,
-                      "errors": [{ "message": "Network timeout — retrying" }]
+                      "duration": 27340,
+                      "startTime": "2026-05-14T03:13:30.000Z",
+                      "errors": [
+                        {
+                          "message": "Error: Timed out 10000ms waiting for expect(locator).toBeVisible()\n\nLocator: getByText('Order Complete')\nExpected: visible\nReceived: <element(s) not found>\n    at tests/e2e/orders/createOrder.e2e.spec.ts:82:14"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/createOrder-multi-fail/video.webm"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/app/test-results/createOrder-multi-fail/test-failed-1.png"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/app/test-results/createOrder-multi-fail/trace.zip"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "creates order with single service and pays with cash",
+              "ok": true,
+              "tags": ["@regression", "@payment"],
+              "file": "tests/e2e/orders/createOrder.e2e.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "failed",
+                      "duration": 12100,
+                      "errors": [{ "message": "Network timeout — retrying" }],
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/createOrder-single-retry/video.webm"
+                        }
+                      ]
                     },
-                    { "status": "passed", "duration": 14500 }
+                    {
+                      "status": "passed",
+                      "duration": 14500,
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/createOrder-single-pass/video.webm"
+                        }
+                      ]
+                    }
                   ]
                 }
               ]
@@ -117,17 +221,53 @@
       ]
     },
     {
-      "title": "tests/api/auth.api.spec.ts",
-      "file": "tests/api/auth.api.spec.ts",
+      "title": "tests/e2e/orders/deleteOrder.e2e.spec.ts",
+      "file": "tests/e2e/orders/deleteOrder.e2e.spec.ts",
       "suites": [
         {
-          "title": "API — auth @api @smoke",
+          "title": "Orders — delete order @regression",
           "specs": [
             {
-              "title": "POST /auth/login returns access token for valid creds",
+              "title": "deletes an order before payment",
+              "ok": true,
+              "tags": ["@regression"],
+              "file": "tests/e2e/orders/deleteOrder.e2e.spec.ts",
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "duration": 9200,
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/app/test-results/deleteOrder-pass/video.webm"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/api/staff.api.spec.ts",
+      "file": "tests/api/staff.api.spec.ts",
+      "suites": [
+        {
+          "title": "API — staff @api @smoke",
+          "specs": [
+            {
+              "title": "GraphQL staffList returns the seeded staff",
               "ok": true,
               "tags": ["@api", "@smoke"],
-              "file": "tests/api/auth.api.spec.ts",
+              "file": "tests/api/staff.api.spec.ts",
               "tests": [
                 {
                   "projectName": "api",
@@ -137,34 +277,10 @@
               ]
             },
             {
-              "title": "POST /auth/login rejects bad password",
-              "ok": true,
-              "tags": ["@api", "@smoke"],
-              "file": "tests/api/auth.api.spec.ts",
-              "tests": [
-                {
-                  "projectName": "api",
-                  "expectedStatus": "passed",
-                  "results": [{ "status": "passed", "duration": 380 }]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "tests/api/payment.api.spec.ts",
-      "file": "tests/api/payment.api.spec.ts",
-      "suites": [
-        {
-          "title": "API — payments @api @regression",
-          "specs": [
-            {
-              "title": "POST /payments creates a payment matching the schema",
+              "title": "findByNickname returns Elise Terry with the expected staff code",
               "ok": false,
-              "tags": ["@api", "@regression"],
-              "file": "tests/api/payment.api.spec.ts",
+              "tags": ["@api", "@smoke"],
+              "file": "tests/api/staff.api.spec.ts",
               "tests": [
                 {
                   "projectName": "api",
@@ -172,38 +288,14 @@
                   "results": [
                     {
                       "status": "failed",
-                      "duration": 5210,
+                      "duration": 380,
                       "errors": [
                         {
-                          "message": "Schema validation failed for POST /payments:\n  - /currency must match pattern \"^[A-Z]{3}$\""
+                          "message": "Expected staffCode '0123' but received '0124'"
                         }
                       ]
                     }
                   ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "tests/visual/login.visual.spec.ts",
-      "file": "tests/visual/login.visual.spec.ts",
-      "suites": [
-        {
-          "title": "Visual — login @visual",
-          "specs": [
-            {
-              "title": "login page matches baseline",
-              "ok": true,
-              "tags": ["@visual"],
-              "file": "tests/visual/login.visual.spec.ts",
-              "tests": [
-                {
-                  "projectName": "visual",
-                  "expectedStatus": "skipped",
-                  "results": [{ "status": "skipped", "duration": 0 }]
                 }
               ]
             }
