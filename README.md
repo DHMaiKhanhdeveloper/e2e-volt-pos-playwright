@@ -61,12 +61,12 @@ Enterprise-grade Playwright automation framework for the **Volt POS** applicatio
 
 ## Prerequisites
 
-| Tool                | Version          |
-| ------------------- | ---------------- |
-| Node.js             | 18+ (LTS 20)     |
-| npm                 | 9+               |
-| Volt POS app        | running on 1420  |
-| OS                  | Win / mac / Linux |
+| Tool         | Version           |
+| ------------ | ----------------- |
+| Node.js      | 18+ (LTS 20)      |
+| npm          | 9+                |
+| Volt POS app | running on 1420   |
+| OS           | Win / mac / Linux |
 
 ---
 
@@ -181,13 +181,13 @@ Patterns to follow:
 
 ### Staff (dev environment)
 
-| Nickname    | Staff code | Notes                       |
-| ----------- | ---------- | --------------------------- |
-| Elise Terry | 0123       | Tenant / Owner              |
-| Emma2       | 9995       |                             |
-| Amelia      | 0114       |                             |
-| Isabella    | 0115       |                             |
-| Luna        | 1111       |                             |
+| Nickname    | Staff code | Notes          |
+| ----------- | ---------- | -------------- |
+| Elise Terry | 0123       | Tenant / Owner |
+| Emma2       | 9995       |                |
+| Amelia      | 0114       |                |
+| Isabella    | 0115       |                |
+| Luna        | 1111       |                |
 
 ### App flow — Create Order
 
@@ -234,9 +234,9 @@ When the Volt POS app is hosted somewhere CI can reach, set `BASE_URL` and `GRAP
 
 ## Troubleshooting
 
-| Symptom                                                  | Fix                                                                                |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `✗ Volt POS app is not running at http://localhost:1420` | Start the app: `cd ../app && npm run dev`                                          |
-| App crashes in Chromium (`__TAURI_INTERNALS__` undefined) | Add the Tauri-detector guard in `../app/src/lib/i18n/tauri-language-detector.ts`   |
-| GraphQL test fails with HTTP 404                          | App is running but `/graphql` is gated — check `GRAPHQL_URL`                       |
-| Test passes locally, fails in CI                          | CI uses retries; check trace artifacts in `test-results/` for race conditions      |
+| Symptom                                                   | Fix                                                                              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `✗ Volt POS app is not running at http://localhost:1420`  | Start the app: `cd ../app && npm run dev`                                        |
+| App crashes in Chromium (`__TAURI_INTERNALS__` undefined) | Add the Tauri-detector guard in `../app/src/lib/i18n/tauri-language-detector.ts` |
+| GraphQL test fails with HTTP 404                          | App is running but `/graphql` is gated — check `GRAPHQL_URL`                     |
+| Test passes locally, fails in CI                          | CI uses retries; check trace artifacts in `test-results/` for race conditions    |

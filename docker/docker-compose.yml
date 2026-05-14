@@ -16,4 +16,4 @@ services:
     volumes:
       - ../reports:/app/reports
       - ../test-results:/app/test-results
-    command: ["npx", "playwright", "test", "tests/smoke"]
+    command: ['npx', 'playwright', 'test', 'tests/smoke']

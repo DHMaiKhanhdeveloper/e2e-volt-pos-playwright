@@ -1,12 +1,4 @@
-import {
-  FlatTest,
-  Outcome,
-  PwReport,
-  PwSpec,
-  PwSuite,
-  PwTest,
-  Summary,
-} from '../types';
+import { FlatTest, Outcome, PwReport, PwSpec, PwSuite, PwTest, Summary } from '../types';
 
 const classifyOutcome = (test: PwTest): Outcome => {
   const lastResult = test.results[test.results.length - 1];
@@ -34,11 +26,7 @@ const extractTags = (title: string, declared?: string[]): string[] => {
   return Array.from(set);
 };
 
-const walkSuites = (
-  suites: PwSuite[],
-  parentTitles: string[],
-  acc: FlatTest[],
-): void => {
+const walkSuites = (suites: PwSuite[], parentTitles: string[], acc: FlatTest[]): void => {
   for (const suite of suites) {
     const titles = [...parentTitles, suite.title].filter(Boolean);
 
@@ -56,12 +44,7 @@ const walkSuites = (
   }
 };
 
-const flattenSpec = (
-  spec: PwSpec,
-  test: PwTest,
-  titles: string[],
-  suite: PwSuite,
-): FlatTest => {
+const flattenSpec = (spec: PwSpec, test: PwTest, titles: string[], suite: PwSuite): FlatTest => {
   const outcome = classifyOutcome(test);
   const lastResult = test.results[test.results.length - 1];
   return {

@@ -30,7 +30,12 @@ export const DonutChart = ({ summary }: Props) => {
 
   return (
     <div className="donut-wrap">
-      <svg viewBox="0 0 200 200" className="donut-svg" role="img" aria-label="Pass/fail donut chart">
+      <svg
+        viewBox="0 0 200 200"
+        className="donut-svg"
+        role="img"
+        aria-label="Pass/fail donut chart"
+      >
         <circle cx="100" cy="100" r={radius} className="donut-track" />
         {slices.map((s) => {
           const length = (s.value / total) * circumference;

@@ -5,5 +5,16 @@ test-results
 playwright-report
 allure-results
 allure-report
+dashboard/dist
+dashboard/node_modules
 *.lock
 package-lock.json
+*.bat
+*.cmd
+*.ps1
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.pdf
