@@ -42,6 +42,7 @@ chore(ci): pin Node to 20.x
 ## Reviewing tests for flakiness
 
 Before merging:
+
 - No `page.waitForTimeout(...)`. Use locator auto-waiting or `waitFor({state: 'visible'})`.
 - No order-dependent assertions across spec files (`test.describe.configure({ mode: 'parallel' })` is the default).
 - API setup over UI setup whenever possible.

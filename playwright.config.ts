@@ -30,7 +30,10 @@ export default defineConfig({
     ['html', { outputFolder: 'reports/html', open: 'never' }],
     ['json', { outputFile: 'reports/json/results.json' }],
     ['junit', { outputFile: 'reports/junit/results.xml' }],
-    ['allure-playwright', { outputFolder: 'reports/allure-results', detail: true, suiteTitle: true }],
+    [
+      'allure-playwright',
+      { outputFolder: 'reports/allure-results', detail: true, suiteTitle: true },
+    ],
   ],
 
   use: {

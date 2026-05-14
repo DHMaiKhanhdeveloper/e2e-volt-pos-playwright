@@ -33,6 +33,7 @@ module.exports = {
     'reports',
     'test-results',
     'playwright-report',
+    'dashboard', // has its own tsconfig + lint setup
     '*.js',
     '!.eslintrc.cjs',
   ],

@@ -22,7 +22,9 @@ export class HomePage extends BasePage {
 
   async goto(): Promise<void> {
     await this.page.goto(this.path);
-    await this.page.waitForLoadState('networkidle');
+    // Wait for the page's signature element instead of `networkidle`, which can
+    // hang on apps with long-poll / analytics traffic.
+    await this.staffSearchInput.waitFor({ state: 'visible' });
     await this.cleanupExistingOrder();
   }
 

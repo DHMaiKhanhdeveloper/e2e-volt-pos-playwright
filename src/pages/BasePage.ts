@@ -20,9 +20,13 @@ export abstract class BasePage {
     await this.waitForReady();
   }
 
-  /** Override per page if a more specific signal is available (e.g. a header locator). */
+  /**
+   * Override per page with a specific signal (e.g. a header locator becoming visible).
+   * The base implementation waits for the `load` event — subclasses should prefer
+   * locator-based waits because they reflect real readiness, not just resource loading.
+   */
   async waitForReady(): Promise<void> {
-    await this.page.waitForLoadState('networkidle', { timeout: Timeouts.NAVIGATION });
+    await this.page.waitForLoadState('load', { timeout: Timeouts.NAVIGATION });
   }
 
   async title(): Promise<string> {

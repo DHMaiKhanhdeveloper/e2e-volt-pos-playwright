@@ -29,8 +29,8 @@ const App = () => {
           <h2>Could not load results</h2>
           <p>{error}</p>
           <p className="subtle">
-            Tip: from the project root run <code>npm test</code> first, then open the dashboard.
-            Or click <strong>Open file…</strong> above to load any <code>results.json</code>.
+            Tip: from the project root run <code>npm test</code> first, then open the dashboard. Or
+            click <strong>Open file…</strong> above to load any <code>results.json</code>.
           </p>
         </div>
       )}
