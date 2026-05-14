@@ -43,9 +43,11 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     actionTimeout: 10_000,
     navigationTimeout: 15_000,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    // Record everything so the dashboard can replay both passing AND failing flows.
+    // For CI cost-sensitivity, set VIDEO=retain-on-failure to keep only failures.
+    trace: 'on',
+    screenshot: 'on',
+    video: (process.env.VIDEO ?? 'on') as 'on' | 'retain-on-failure' | 'off',
     locale: 'en-US',
     timezoneId: 'Asia/Ho_Chi_Minh',
     launchOptions: {
@@ -56,6 +58,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/tests/api/**',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },
     {
