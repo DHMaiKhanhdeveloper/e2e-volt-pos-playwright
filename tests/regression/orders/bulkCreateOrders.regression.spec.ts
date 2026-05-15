@@ -17,8 +17,6 @@ const ORDER_CONFIGS = [
 ];
 
 test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
-  test.describe.configure({ mode: 'serial' });
-
   for (let i = 0; i < ORDER_CONFIGS.length; i++) {
     const config = ORDER_CONFIGS[i];
     const serviceNames = config.services.map((s) => s.name).join(' + ');

@@ -47,4 +47,4 @@ export const STAFF = {
  * Owner/tenant passcode used to authorize payment completion in the passcode dialog.
  * The dialog accepts this rather than per-staff codes.
  */
-export const OWNER_PASSCODE = '0123';
+export const OWNER_PASSCODE = '8888';

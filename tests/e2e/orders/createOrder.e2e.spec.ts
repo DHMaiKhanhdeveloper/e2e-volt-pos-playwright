@@ -4,8 +4,6 @@ import { STAFF, OWNER_PASSCODE } from '@data/static/staff';
 import { SERVICES } from '@data/static/services';
 
 test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeEach(async ({ homePage }) => {
     await homePage.goto();
   });

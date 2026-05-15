@@ -17,9 +17,9 @@ export default defineConfig({
     toMatchSnapshot: { maxDiffPixelRatio: 0.02 },
   },
 
-  // Volt POS shares global state between orders (active order on home page),
-  // so we run serially. Inside-file parallelism is enforced via
-  // `test.describe.configure({ mode: 'serial' })` where it matters.
+  // Single worker because Volt POS shares backend state across browser
+  // sessions: 2 workers create race conditions on the same staff's active
+  // order. If the backend is later isolated per-session, workers can go up.
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,

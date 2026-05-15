@@ -58,7 +58,7 @@ export const loadEnv = (): AppEnv => {
     GRAPHQL_URL: process.env.GRAPHQL_URL ?? `${baseUrl}/graphql`,
 
     API_TIMEOUT: toInt(process.env.API_TIMEOUT, 30000),
-    OWNER_PASSCODE: process.env.OWNER_PASSCODE ?? '0123',
+    OWNER_PASSCODE: process.env.OWNER_PASSCODE ?? '8888',
 
     LOG_LEVEL: (process.env.LOG_LEVEL as AppEnv['LOG_LEVEL']) ?? 'info',
   };

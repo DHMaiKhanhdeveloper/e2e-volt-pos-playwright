@@ -78,4 +78,34 @@ export class CheckoutPage extends BasePage {
   async isCompletePaymentEnabled(): Promise<boolean> {
     return this.completePaymentButton.isEnabled();
   }
+
+  /**
+   * Card flow helper — current best-effort. Card payment in Volt POS does NOT
+   * auto-tender like Cash; it requires the user to register the tender amount
+   * before "Complete Payment" enables. The exact UX is still being mapped:
+   *
+   *   - Selecting Card leaves "Enter Amount" pre-filled with the order total
+   *     but "Total Paid" stays at $0.00 and Complete Payment is disabled.
+   *   - Typing the amount on the numpad does not by itself move "Total Paid".
+   *
+   * Tests in `createOrderCard.e2e.spec.ts` that rely on this helper currently
+   * fail at the `toBeEnabled` assertion below. Once we confirm the exact
+   * gesture (e.g. a second Card tap, a Tender button, or a card-terminal
+   * webhook) we'll update this helper and re-enable the suite.
+   */
+  async payByCardForOrderTotal(): Promise<void> {
+    await this.selectPaymentMethod('Card');
+
+    const totalText = await this.getOrderTotal();
+    const digits = totalText.replace(/\D/g, '');
+    if (!digits) {
+      throw new Error(`Could not parse order total digits from: "${totalText}"`);
+    }
+
+    await this.page.getByRole('button', { name: 'C', exact: true }).click();
+    await this.page.waitForTimeout(200);
+    await this.enterAmountViaNumpad(digits);
+
+    await expect(this.completePaymentButton).toBeEnabled({ timeout: 5_000 });
+  }
 }

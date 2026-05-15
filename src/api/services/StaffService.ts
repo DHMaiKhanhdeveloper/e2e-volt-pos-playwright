@@ -2,7 +2,7 @@ import { GraphQLClient } from '@api/clients/GraphQLClient';
 import { StaffListResponse, StaffNode } from '@api/models/Staff';
 
 const STAFF_LIST_QUERY = `
-  {
+  query StaffList {
     staffList {
       id
       firstName
