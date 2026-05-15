@@ -17,6 +17,7 @@ Enterprise-grade Playwright automation framework for the **Volt POS** applicatio
 - **CI/CD** — GitHub Actions workflows for PR and nightly regression
 - **Docker** runner image based on the official Playwright image
 - **React dashboard** in [dashboard/](dashboard/) for visual pass/fail analysis
+- **MCP servers** in [.mcp.json](.mcp.json) — Claude Code picks up Playwright + GitHub MCP automatically; see [Working with Claude Code](#working-with-claude-code-mcp) below
 
 ---
 
@@ -220,6 +221,43 @@ Endpoint: `<BASE_URL>/graphql`. Useful queries seeded in code:
 ```bash
 docker compose -f docker/docker-compose.yml run --rm e2e
 ```
+
+---
+
+## Working with Claude Code (MCP)
+
+The repo ships a project-level [.mcp.json](.mcp.json) so any teammate running
+**Claude Code** inside this directory picks up the same MCP servers automatically.
+
+| Server         | What it does                                                                                | Setup                                                  |
+| -------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **playwright** | Lets Claude drive a real Chromium — useful for recording new POMs and debugging selectors. | Zero — `npx -y @playwright/mcp@latest` is pulled on first use. |
+| **github**     | PR / issue / review operations against this repo without leaving the chat.                  | Export a Personal Access Token before launching Claude. |
+
+### Enable GitHub MCP
+
+1. Create a fine-grained PAT at <https://github.com/settings/personal-access-tokens/new>
+   - Repository access → "Only select repositories" → pick `e2e-volt-pos-playwright`
+   - Permissions: **Contents** (R/W), **Pull requests** (R/W), **Issues** (R/W), **Metadata** (R)
+2. Set the env var **before** launching Claude (token never lands in the repo):
+   ```powershell
+   # PowerShell
+   $env:GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_xxx"
+   claude
+   ```
+   ```bash
+   # bash / zsh
+   export GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxx
+   claude
+   ```
+3. First run, Claude will ask you to approve the MCP server — accept once and it stays trusted for this workspace.
+
+### Useful prompts once MCP is on
+
+- **Playwright**: _"Open localhost:1420, click staff `Luna`, pick `Spa Service`, take a snapshot and turn the action into a Playwright spec."_
+- **GitHub**: _"List open PRs · Add a label `needs-review` to PR #4 · Comment 'CI passed, please merge' on PR #5."_
+
+> If your IDE has its own Claude / MCP integration, it may pick up `.mcp.json` automatically. Otherwise restart the CLI after editing the file.
 
 ---
 
