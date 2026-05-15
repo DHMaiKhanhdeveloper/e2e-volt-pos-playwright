@@ -173,7 +173,7 @@ Patterns to follow:
 - Order-creating tests should clean up by calling `paymentSuccessPage.clickNoReceipt()` to return to home.
 - Order tests must run with `mode: 'serial'` because the home page only holds one active order at a time.
 - Service names must be specific enough to avoid partial matches (e.g. `Acrylic Removal`, not `Black & White Full Set` which collides with other items).
-- Use `OWNER_PASSCODE` (`0123`) for the passcode dialog — the dialog accepts the owner code, not per-staff codes.
+- Use `OWNER_PASSCODE` (`8888`) for the passcode dialog — the dialog accepts the owner code, not per-staff codes.
 
 ---
 
@@ -196,7 +196,7 @@ Patterns to follow:
 3. Click **Pay** → Checkout page
 4. Choose payment method (Card / Cash / Gift Card / Other)
 5. Click **Complete Payment** → Passcode dialog
-6. Enter owner passcode (`0123`) → Payment Success page
+6. Enter owner passcode (`8888`) → Payment Success page
 7. Choose receipt option → back to Home
 
 ### GraphQL

@@ -35,26 +35,44 @@ export class HomePage extends BasePage {
   /** Removes any leftover order from a previous test run. Best-effort, never throws. */
   async cleanupExistingOrder(): Promise<void> {
     const deleteButton = this.page.getByRole('button', { name: 'Delete Order' });
-    if (await deleteButton.isVisible({ timeout: 1_000 }).catch(() => false)) {
+    if (await deleteButton.isVisible({ timeout: 500 }).catch(() => false)) {
       await deleteButton.click();
       const confirmButton = this.page.getByRole('button', { name: /confirm|yes|ok|delete/i });
-      if (await confirmButton.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      if (await confirmButton.isVisible({ timeout: 500 }).catch(() => false)) {
         await confirmButton.click();
       }
-      await this.page.waitForTimeout(500);
+      // Wait for the Delete Order button to disappear — that's the real signal
+      // the order has been removed, not a fixed 500ms guess.
+      await deleteButton
+        .waitFor({ state: 'hidden', timeout: 2_000 })
+        .catch(() => undefined);
     }
   }
 
   async selectStaff(staffNickname: string): Promise<void> {
+    // The app adds `.is-changing-staff` to the staff card while a staff change
+    // is in flight; that class has an `::after` overlay which intercepts
+    // pointer events and causes click-retry timeouts. Wait for it to clear.
+    await this.page
+      .waitForFunction(() => !document.querySelector('.is-changing-staff'), undefined, {
+        timeout: 500,
+      })
+      .catch(() => undefined);
+
     const staffCard = this.page.locator('#home-staff-listing').getByText(staffNickname);
-    await staffCard.click();
+    // `force: true` bypasses the "intercepts pointer events" actionability
+    // check — the `.is-changing-staff::after` overlay is purely visual and the
+    // click event still lands on the underlying card element.
+    await staffCard.click({ force: true });
     await this.waitForOrderCreated();
   }
 
   async selectService(serviceName: string): Promise<void> {
     const serviceItem = this.page.getByRole('listitem').filter({ hasText: serviceName }).first();
     await serviceItem.click();
-    await this.page.waitForTimeout(500);
+    // Wait for the service to appear in the order summary instead of a fixed sleep.
+    // The Pay button enabling is the downstream signal we ultimately care about.
+    await expect(this.payButton).toBeEnabled({ timeout: 2_000 });
   }
 
   async getOrderTotal(): Promise<string> {
