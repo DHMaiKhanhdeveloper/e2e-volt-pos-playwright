@@ -1,0 +1,177 @@
+# =============================================================================
+# GitLab CI/CD pipeline for the E2E Volt POS Playwright suite
+#
+# Runs in parallel with .github/workflows/ — each CI system reads its own file,
+# they don't conflict. Both consume the same secrets via their respective
+# settings page (Secrets/Variables).
+#
+# Required CI/CD variables (Settings -> CI/CD -> Variables on GitLab):
+#   BASE_URL          e.g. http://host.docker.internal:1420 (local runner)
+#                          or https://pos.stage.example.com (deployed app)
+#   GRAPHQL_URL       e.g. ${BASE_URL}/graphql
+#   OWNER_PASSCODE    8888
+#
+# Required runner: at least one Docker-executor runner registered to this
+# project. See README -> "Local GitLab + Runner setup".
+# =============================================================================
+
+# Pin to the same Playwright image our Dockerfile uses for parity with local +
+# GitHub CI runs.
+image: mcr.microsoft.com/playwright:v1.48.0-jammy
+
+# Cache node_modules + Playwright's downloaded browsers between jobs so installs
+# don't repeat in every stage.
+variables:
+  NODE_OPTIONS: "--no-warnings"
+  PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
+  ENV: "stage"
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+    - .cache/ms-playwright/
+
+stages:
+  - install
+  - check
+  - test
+  - report
+
+# -----------------------------------------------------------------------------
+# install — fill the cache once per pipeline (or whenever package-lock changes)
+# -----------------------------------------------------------------------------
+install:
+  stage: install
+  script:
+    - npm ci --ignore-scripts
+    - npx playwright install --with-deps chromium
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^(feat|fix|chore|docs)\//
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# -----------------------------------------------------------------------------
+# check — static analysis (fast, fails the pipeline early)
+# -----------------------------------------------------------------------------
+typecheck:
+  stage: check
+  needs: ["install"]
+  script:
+    - npx tsc --noEmit
+
+lint:
+  stage: check
+  needs: ["install"]
+  script:
+    - npx eslint . --ext .ts,.js
+
+# -----------------------------------------------------------------------------
+# test — split by tag/suite so failures are isolated and re-runs cheaper
+# -----------------------------------------------------------------------------
+.test-base: &test-base
+  stage: test
+  needs: ["install"]
+  variables:
+    BASE_URL: "$BASE_URL"
+    GRAPHQL_URL: "$GRAPHQL_URL"
+    OWNER_PASSCODE: "$OWNER_PASSCODE"
+    PLAYWRIGHT_RUN_ID: "$CI_PIPELINE_ID-$CI_JOB_NAME"
+  artifacts:
+    when: always
+    paths:
+      - reports/html
+      - reports/json
+      - reports/junit
+      - reports/allure-results
+      - test-results
+    reports:
+      junit: reports/junit/results.xml
+    expire_in: 14 days
+
+test:smoke:
+  <<: *test-base
+  script:
+    - npx playwright test tests/smoke
+
+test:e2e:
+  <<: *test-base
+  script:
+    - npx playwright test tests/e2e
+  allow_failure: true   # 5 Card tests fail until card terminal hardware lands
+
+test:regression:
+  <<: *test-base
+  script:
+    - npx playwright test tests/regression
+  rules:
+    # Slow — only on default branch or scheduled runs to save runner time
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+test:api:
+  <<: *test-base
+  script:
+    - npx playwright test tests/api --project=api
+
+# -----------------------------------------------------------------------------
+# report — aggregate Allure results + publish HTML to GitLab Pages
+# -----------------------------------------------------------------------------
+pages:
+  stage: report
+  needs:
+    - job: test:smoke
+      artifacts: true
+    - job: test:e2e
+      artifacts: true
+    - job: test:api
+      artifacts: true
+  script:
+    - mkdir -p public
+    - cp -r reports/html/. public/ 2>/dev/null || true
+    - ls -la public
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+allure-report:
+  stage: report
+  needs:
+    - job: test:smoke
+      artifacts: true
+    - job: test:e2e
+      artifacts: true
+    - job: test:regression
+      artifacts: true
+      optional: true
+    - job: test:api
+      artifacts: true
+  image: openjdk:17-jdk-slim
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq wget unzip
+    - wget -q https://github.com/allure-framework/allure2/releases/download/2.30.0/allure-2.30.0.zip
+    - unzip -q allure-2.30.0.zip
+    - export PATH="$PWD/allure-2.30.0/bin:$PATH"
+  script:
+    - allure generate reports/allure-results --clean -o reports/allure-report
+  artifacts:
+    when: always
+    paths:
+      - reports/allure-report
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+  allow_failure: true
