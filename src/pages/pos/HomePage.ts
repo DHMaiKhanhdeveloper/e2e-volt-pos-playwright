@@ -43,9 +43,7 @@ export class HomePage extends BasePage {
       }
       // Wait for the Delete Order button to disappear — that's the real signal
       // the order has been removed, not a fixed 500ms guess.
-      await deleteButton
-        .waitFor({ state: 'hidden', timeout: 2_000 })
-        .catch(() => undefined);
+      await deleteButton.waitFor({ state: 'hidden', timeout: 2_000 }).catch(() => undefined);
     }
   }
 
