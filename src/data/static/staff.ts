@@ -41,6 +41,66 @@ export const STAFF = {
     lastName: 'Test',
     staffCode: '1111',
   },
+  NATALIE_CARDENAS: {
+    nickname: 'Natalie Cardenas',
+    firstName: 'Ralph',
+    lastName: 'Johnston',
+    staffCode: '4199',
+  },
+  GEORGE_FOX: {
+    nickname: 'George Fox',
+    firstName: 'Shelby',
+    lastName: 'Garcia',
+    staffCode: '5922',
+  },
+  CHRISTIAN_CANTRELL: {
+    nickname: 'Christian Cantrell',
+    firstName: 'Paula',
+    lastName: 'Wynn',
+    staffCode: '5244',
+  },
+  SONYA_MOODY: {
+    nickname: 'Sonya Moody',
+    firstName: 'Murphy',
+    lastName: 'Dejesus',
+    staffCode: '0100',
+  },
+  OCTAVIUS_RICH: {
+    nickname: 'Octavius Rich',
+    firstName: 'Graiden',
+    lastName: 'Pacheco',
+    staffCode: '4124',
+  },
+  MADONNA_VEGA: {
+    nickname: 'Madonna Vega',
+    firstName: 'Thaddeus',
+    lastName: 'Glass',
+    staffCode: '6873',
+  },
+  ORA_SPENCER: {
+    nickname: 'Ora Spencer',
+    firstName: 'Abel',
+    lastName: 'Calderon',
+    staffCode: '1077',
+  },
+  CRUZ_RASMUSSEN: {
+    nickname: 'Cruz Rasmussen',
+    firstName: 'Coby',
+    lastName: 'Castro',
+    staffCode: '3309',
+  },
+  CASEY_FLYNN: {
+    nickname: 'Casey Flynn',
+    firstName: 'Dahlia',
+    lastName: 'Giles',
+    staffCode: '7792',
+  },
+  HARLAN_SMALL: {
+    nickname: 'Harlan Small',
+    firstName: 'Darryl',
+    lastName: 'Monroe',
+    staffCode: '5530',
+  },
 } as const satisfies Record<string, Staff>;
 
 /**

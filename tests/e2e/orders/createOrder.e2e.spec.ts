@@ -40,6 +40,9 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     });
 
     await test.step('Pay with cash and complete', async () => {
+      // Tip must be set on cashier side before Complete Payment — otherwise
+      // the app waits on the (absent) customer-facing display. $1.00 here.
+      await checkoutPage.addTip('100');
       await checkoutPage.selectPaymentMethod('Cash');
       expect(await checkoutPage.isCompletePaymentEnabled()).toBe(true);
       await checkoutPage.clickCompletePayment();
@@ -74,6 +77,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
 
     await homePage.clickPay();
 
+    await checkoutPage.addTip('100');
     await checkoutPage.selectPaymentMethod('Cash');
     await checkoutPage.clickCompletePayment();
 
@@ -98,6 +102,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
 
     await homePage.clickPay();
 
+    await checkoutPage.addTip('100');
     await checkoutPage.selectPaymentMethod('Cash');
     await checkoutPage.clickCompletePayment();
 
