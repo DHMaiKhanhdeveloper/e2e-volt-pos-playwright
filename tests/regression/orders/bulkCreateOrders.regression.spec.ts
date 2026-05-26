@@ -44,6 +44,9 @@ test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, 
       });
 
       await test.step('Pay with cash', async () => {
+        // Tip must be set on cashier side before Complete Payment — otherwise
+        // the app waits on the (absent) customer-facing display.
+        await checkoutPage.addTip('100');
         await checkoutPage.selectPaymentMethod('Cash');
         await checkoutPage.clickCompletePayment();
       });
