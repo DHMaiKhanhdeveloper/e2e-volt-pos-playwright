@@ -35,10 +35,7 @@ test.describe(`Daily Sale Report — defaults & tooltips ${Tag.REGRESSION}`, () 
     await dailySaleReportPage.waitForReady();
   });
 
-  test('TC-1: default filter is Today and the full layout renders', async ({
-    page,
-    dailySaleReportPage,
-  }) => {
+  test('TC-1: default filter is Today and the full layout renders', async ({ page }) => {
     // URL: from/to belong to today's local midnight + end-of-day.
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);

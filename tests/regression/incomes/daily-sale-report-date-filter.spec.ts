@@ -23,7 +23,7 @@ const subDays = (date: Date, n: number): Date => {
 };
 
 test.describe(`Daily Sale Report — date filter ${Tag.REGRESSION}`, () => {
-  test('TC-12: picking yesterday loads yesterday\'s data and Today no longer looks active', async ({
+  test("TC-12: picking yesterday loads yesterday's data and Today no longer looks active", async ({
     page,
     dailySaleReportPage,
     passcodeDialog,

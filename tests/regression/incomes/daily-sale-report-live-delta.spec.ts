@@ -111,9 +111,7 @@ test.describe(`Daily Sale Report — live delta ${Tag.REGRESSION} ${Tag.PAYMENT}
     expect(after.amountCollected - before.amountCollected, 'Amount Collected delta').toBe(
       expectedCashDelta,
     );
-    expect(after.totalPayment - before.totalPayment, 'Total Payment delta').toBe(
-      expectedCashDelta,
-    );
+    expect(after.totalPayment - before.totalPayment, 'Total Payment delta').toBe(expectedCashDelta);
 
     // 4. The UI must show the same numbers the report row reports.
     await dailySaleReportPage.goto();

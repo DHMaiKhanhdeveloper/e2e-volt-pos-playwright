@@ -23,9 +23,9 @@ test.describe(`Orders — delete order ${Tag.REGRESSION}`, () => {
 
     await page.waitForTimeout(1000);
 
-    await expect(page.getByText(/Order #OD/)).not.toBeVisible();
+    await expect(page.getByText(/Order #OD/)).toBeHidden();
     await expect(homePage.payButton)
       .toBeDisabled()
-      .catch(() => expect(homePage.payButton).not.toBeVisible());
+      .catch(() => expect(homePage.payButton).toBeHidden());
   });
 });
