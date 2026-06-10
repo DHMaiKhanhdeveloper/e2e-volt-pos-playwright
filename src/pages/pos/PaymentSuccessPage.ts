@@ -40,7 +40,9 @@ export class PaymentSuccessPage extends BasePage {
 
   async clickNoReceipt(): Promise<void> {
     await this.noReceiptButton.click();
-    await this.page.waitForURL(/\/home/);
+    // Closing the receipt returns to the order workspace — the build may land
+    // on either /home or /order-pending depending on how the order was opened.
+    await this.page.waitForURL(/\/(home|order-pending)/);
   }
 
   async isSuccessful(): Promise<boolean> {

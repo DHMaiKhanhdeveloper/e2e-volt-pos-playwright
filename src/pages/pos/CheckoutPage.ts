@@ -105,6 +105,33 @@ export class CheckoutPage extends BasePage {
   }
 
   /**
+   * Gift Card *redemption* flow — runs AFTER the owner passcode is entered.
+   *
+   * Selecting "Gift Card" + Complete Payment + passcode opens a QR-scan dialog.
+   * The test environment has no scanner, so we take the manual path:
+   *   "Input Gift Card Code" → type the code → Confirm → (balance check) → Pay.
+   *
+   * Leaves the page on the Payment Success screen for the caller to assert.
+   */
+  async redeemGiftCard(code: string): Promise<void> {
+    const dialog = this.page.getByRole('dialog');
+
+    // Switch from QR scan to manual code entry.
+    await dialog.getByRole('button', { name: 'Input Gift Card Code' }).click();
+
+    const codeInput = dialog.getByRole('textbox');
+    await codeInput.fill(code);
+
+    const confirmButton = dialog.getByRole('button', { name: 'Confirm', exact: true });
+    await expect(confirmButton).toBeEnabled();
+    await confirmButton.click();
+
+    // Balance-check confirmation: the card must be accepted before we can pay.
+    await expect(dialog.getByText('Gift Card Accepted')).toBeVisible({ timeout: 10_000 });
+    await dialog.getByRole('button', { name: 'Pay', exact: true }).click();
+  }
+
+  /**
    * Card flow helper — stops at the "Card amount entered" screen.
    *
    * Card payment in Volt POS does NOT auto-tender like Cash; "Complete Payment"

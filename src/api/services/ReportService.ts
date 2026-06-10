@@ -74,14 +74,6 @@ const endOfDayIso = (d: Date): string => {
   return x.toISOString();
 };
 
-/** Yyyy-MM-dd in local time, matching the `reportDate` arg shape used by the app. */
-const localDateKey = (d: Date): string => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-
 /**
  * GraphQL service for the Daily Sale Report.
  *
@@ -101,19 +93,19 @@ export class ReportService {
         STORE_DAILY_INCOME_LIVE_QUERY,
         {
           operationName: 'storeDailyIncomeLive',
-          variables: { reportDate: localDateKey(date) },
+          // `reportDate` must be a full RFC3339 timestamp (the backend rejects a
+          // bare `YYYY-MM-DD`). The app sends start-of-merchant-local-day in UTC,
+          // which is exactly what `startOfDayIso` yields.
+          variables: { reportDate: startOfDayIso(date) },
         },
       );
       return data.storeDailyIncomeLive;
     }
 
-    const data = await this.client.query<StoreDailyIncomeListResponse>(
-      STORE_DAILY_INCOME_QUERY,
-      {
-        operationName: 'storeDailyIncome',
-        variables: { from: startOfDayIso(date), to: endOfDayIso(date) },
-      },
-    );
+    const data = await this.client.query<StoreDailyIncomeListResponse>(STORE_DAILY_INCOME_QUERY, {
+      operationName: 'storeDailyIncome',
+      variables: { from: startOfDayIso(date), to: endOfDayIso(date) },
+    });
     return data.reportStoreDailyIncomeList[0] ?? null;
   }
 

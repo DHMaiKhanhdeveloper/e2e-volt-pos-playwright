@@ -54,12 +54,8 @@ test.describe(`Daily Sale Report — orders table column math ${Tag.REGRESSION}`
       const r = await dailySaleReportPage.readOrderRow(code);
       // Every Sale & Tip cell must look like USD currency (optionally with
       // a leading minus for refund rows). Catches stray "—" or "N/A" leaks.
-      expect(r.sale, `row ${code} Sale="${r.sale}"`).toMatch(
-        /^-?\$\d{1,3}(,\d{3})*\.\d{2}$/,
-      );
-      expect(r.tip, `row ${code} Tip="${r.tip}"`).toMatch(
-        /^-?\$\d{1,3}(,\d{3})*\.\d{2}$/,
-      );
+      expect(r.sale, `row ${code} Sale="${r.sale}"`).toMatch(/^-?\$\d{1,3}(,\d{3})*\.\d{2}$/);
+      expect(r.tip, `row ${code} Tip="${r.tip}"`).toMatch(/^-?\$\d{1,3}(,\d{3})*\.\d{2}$/);
     }
   });
 });

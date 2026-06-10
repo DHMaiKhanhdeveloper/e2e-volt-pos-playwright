@@ -7,15 +7,16 @@ import type { StoreDailyIncomeRow } from '@api/models/Report';
 /**
  * Daily Sale Report — mocked GraphQL scenarios (Tier 3).
  *
- * These TCs depend on data shapes that are awkward (or impossible) to
- * reproduce in a fresh dev environment — Tax column with non-zero values,
- * a Gift Card redemption that does NOT inflate Sale, a single order with
- * split tender, an order timestamped on the timezone boundary. We respond
- * to the GraphQL operations directly with crafted payloads.
+ * These TCs depend on data shapes that are awkward to reproduce in a fresh
+ * dev environment — a single order with split tender, an order timestamped on
+ * the timezone boundary. We respond to the GraphQL operations directly with
+ * crafted payloads.
+ *
+ * Note: TC-16 (per-order tax) and TC-24 (gift card redemption) moved to
+ * daily-sale-report-payment-types.spec.ts, where they now run against real
+ * data through the checkout UI instead of mocked rows.
  *
  * Coverage:
- *   TC-16 Order Detail Tax column reflects per-order tax
- *   TC-24 Gift Card Redemption counts toward Total Payment but NOT Sale
  *   TC-43 Split payment allocates across Card / Cash / Gift Card buckets
  *   TC-44 Timezone boundary — an order at 23:59 belongs to the chosen day,
  *         00:01 the next day does not
@@ -85,42 +86,6 @@ const installMockedRow = async (
 };
 
 test.describe(`Daily Sale Report — mocked scenarios ${Tag.REGRESSION}`, () => {
-  test('TC-24: Gift Card Redemption inflates Total Payment but NOT Sale', async ({
-    page,
-    dailySaleReportPage,
-    passcodeDialog,
-  }) => {
-    const sale = 200_00; // $200.00
-    const giftCard = 465_000; // $4,650.00
-    await installMockedRow(
-      page,
-      blankRow({
-        dailySaleSale: sale,
-        dailySalePaymentCash: sale,
-        dailySalePaymentAmountCollected: sale,
-        dailySalePaymentGiftCardRedemption: giftCard,
-        dailySaleTotalPayment: sale + giftCard,
-        incomeTotalPayment: sale + giftCard,
-      }),
-    );
-
-    await dailySaleReportPage.goto();
-    await passcodeDialog.enterPasscode(OWNER_PASSCODE);
-    await dailySaleReportPage.waitForReady();
-
-    await expect(dailySaleReportPage.incomeSale()).toHaveText(formatUsdFromCents(sale));
-    await expect(dailySaleReportPage.paymentGiftCardRedemption()).toHaveText(
-      formatUsdFromCents(giftCard),
-    );
-    await expect(dailySaleReportPage.paymentTotalPayment()).toHaveText(
-      formatUsdFromCents(sale + giftCard),
-    );
-    // Critical invariant: Sale never absorbs the gift card amount.
-    await expect(dailySaleReportPage.incomeSale()).not.toHaveText(
-      formatUsdFromCents(sale + giftCard),
-    );
-  });
-
   test('TC-43: a split-tender order shows across Card / Cash / Gift Card buckets', async ({
     page,
     dailySaleReportPage,
@@ -158,39 +123,7 @@ test.describe(`Daily Sale Report — mocked scenarios ${Tag.REGRESSION}`, () => 
     await expect(dailySaleReportPage.paymentAmountCollected()).toHaveText(
       formatUsdFromCents(amountCollected),
     );
-    await expect(dailySaleReportPage.paymentTotalPayment()).toHaveText(
-      formatUsdFromCents(total),
-    );
-  });
-
-  test('TC-16: Tax column row shows the per-order tax (mocked Income Detail)', async ({
-    page,
-    dailySaleReportPage,
-    passcodeDialog,
-  }) => {
-    const sale = 1500_00;
-    const tax = 150_00;
-    await installMockedRow(
-      page,
-      blankRow({
-        dailySaleSale: sale,
-        dailySalePaymentCash: sale + tax,
-        dailySalePaymentAmountCollected: sale + tax,
-        dailySaleTotalPayment: sale + tax,
-        incomeTaxAmount: tax,
-        incomeTotalPayment: sale + tax,
-      }),
-    );
-
-    await dailySaleReportPage.goto();
-    await passcodeDialog.enterPasscode(OWNER_PASSCODE);
-    await dailySaleReportPage.waitForReady();
-
-    await expect(dailySaleReportPage.incomeTaxCollected()).toHaveText(formatUsdFromCents(tax));
-    // Income Detail's Total Payment must equal Sale + Tip + Tax.
-    await expect(dailySaleReportPage.incomeTotalPayment()).toHaveText(
-      formatUsdFromCents(sale + tax),
-    );
+    await expect(dailySaleReportPage.paymentTotalPayment()).toHaveText(formatUsdFromCents(total));
   });
 
   test('TC-44: timezone boundary — UI honours the merchant-local day window', async ({

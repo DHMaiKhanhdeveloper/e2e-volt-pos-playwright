@@ -91,9 +91,12 @@ export class DailySaleReportPage extends BasePage {
   /** Numeric/money text inside a stat card (the big bold value). */
   cardValue(name: ChartCard): Locator {
     // The value sits between the heading and the "vs Yesterday" line.
-    // Pull the first descendant whose text is exactly money or an integer.
+    // Pull the first LEAF div/span that holds the value — wrap in ( ) so [1]
+    // selects a single node document-wide (an unparenthesised `//*[…][1]`
+    // matches the first leaf in EVERY branch, so it also grabs the "68%"
+    // badge → strict-mode violation). Exclude the "%" badge explicitly too.
     return this.card(name).locator(
-      'xpath=.//*[self::div or self::span][normalize-space()][1][not(.//*)]',
+      'xpath=(.//*[self::div or self::span][normalize-space()][not(.//*)][not(contains(normalize-space(),"%"))])[1]',
     );
   }
 
@@ -249,13 +252,21 @@ export class DailySaleReportPage extends BasePage {
 
   // ---------------------------------------------------- income/payment details
 
-  /** Find the money value in the same row as a label like "Sale", "Tip", "Card"… */
+  /**
+   * Find the money value in the same row as a label like "Sale", "Tip", "Card"…
+   *
+   * Each detail row is a `div.justify-between` with two children — a left block
+   * holding the label (+ optional helper text) and the money value as the last
+   * child. We anchor on the exact label, climb to the row, then take its last
+   * element. Scoped to the section so "Total Payment" (in both Income & Payment
+   * Details) resolves to the right one.
+   */
   private detailValue(section: 'Income Details' | 'Payment Details', label: string): Locator {
     return this.page
       .getByRole('heading', { name: section })
       .locator('..')
       .getByText(label, { exact: true })
-      .locator('xpath=following-sibling::*[1]');
+      .locator('xpath=ancestor::div[contains(@class,"justify-between")][1]/*[last()]');
   }
 
   // Income Details rows

@@ -69,7 +69,7 @@ const waitForRowToAdvance = async (
 test.describe.configure({ mode: 'serial' });
 
 test.describe(`Daily Sale Report — refund & cancel ${Tag.REGRESSION} ${Tag.PAYMENT} ${Tag.SLOW}`, () => {
-  test('TC-23 + TC-2 + TC-6: cancelling an unsettled order leaves no trace in today\'s totals', async ({
+  test("TC-23 + TC-2 + TC-6: cancelling an unsettled order leaves no trace in today's totals", async ({
     homePage,
     checkoutPage,
     passcodeDialog,
@@ -211,8 +211,7 @@ test.describe(`Daily Sale Report — refund & cancel ${Tag.REGRESSION} ${Tag.PAY
     if (afterPay) {
       // TC-8 reconciliation in the mid state: Income.TotalPayment must equal
       // Payment.TotalPayment, regardless of where in the lifecycle we are.
-      const incomeTP =
-        afterPay.dailySaleSale + afterPay.dailySaleTip + afterPay.incomeTaxAmount;
+      const incomeTP = afterPay.dailySaleSale + afterPay.dailySaleTip + afterPay.incomeTaxAmount;
       const paymentTP =
         afterPay.dailySalePaymentCard +
         afterPay.dailySalePaymentCash +
