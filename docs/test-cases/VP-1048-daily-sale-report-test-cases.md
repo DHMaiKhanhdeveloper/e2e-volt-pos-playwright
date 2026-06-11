@@ -15,13 +15,13 @@
 |----|---------|----------|------|-------------|---------------|------------|-----------|-----------------|---------------|--------|------|
 | 1 | POS | Business Snapshot | Daily Sale Report | Mở màn hình Daily Sale Report, mặc định filter = Today | User đã đăng nhập, có quyền xem báo cáo | 1. Vào Daily Sale Report | | 1. Màn hình hiển thị 4 card: Total Order, Sale, Total Tip, Total Payment<br>2. Filter mặc định = **Today**, ngày = ngày hiện tại<br>3. Panel phải hiển thị List Order Detail + Income Detail + Payment Detail của hôm nay | | | |
 | 2 | POS | Business Snapshot | Daily Sale Report | Total Order đếm đúng số order, loại trừ cancel/refund/manual refund | Trong ngày có order sale + order cancel + order refund + manual refund | 1. Mở báo cáo ngày có dữ liệu<br>2. Đọc giá trị card Total Order | 5 sale, 1 cancel, 1 refund, 1 manual refund | 1. Total Order = **5** (chỉ đếm order hợp lệ)<br>2. Order cancel/refund/manual refund KHÔNG được đếm | | | // NOTE: cần xác nhận order có refund 1 phần được đếm hay không |
-| 3 | POS | Business Snapshot | Daily Sale Report | Tooltip card Orders hiển thị đúng nội dung | Đang ở Daily Sale Report | 1. Hover/click icon (i) cạnh "Total Order" | | 1. Tooltip hiển thị: "Total number of order, excluding cancel/refunds/manual refunds." | | | |
+| 3 | POS | Business Snapshot | Daily Sale Report | Mô tả card Orders hiển thị inline (UI mới bỏ tooltip) | Đang ở Daily Sale Report | 1. Xem text mô tả ngay dưới tiêu đề card "Total Order" | | 1. Text hiển thị sẵn (không cần hover): "Total number of order, excluding cancel/refunds/ manual refunds" | | | // UI mới: bỏ icon (i)+tooltip, render text inline |
 | 4 | POS | Business Snapshot | Daily Sale Report | Sale = tổng sale/refund/partial refund sau Discount, KHÔNG tính Tip/Tax, KHÔNG tính order Cancel | Có order sale, refund, partial refund, cancel với Tip & Tax | 1. Mở báo cáo<br>2. Đọc card Sale | Order A: Sale 110, Discount 10, Tip 30, Tax 8.8<br>Order B (refund) -50<br>Order C (cancel) 200 | 1. Sale = (110-10) + (-50) = **$50.00**<br>2. KHÔNG cộng Tip (30), KHÔNG cộng Tax (8.8)<br>3. KHÔNG cộng order Cancel (200) | | | |
-| 5 | POS | Business Snapshot | Daily Sale Report | Tooltip card Sale | Đang ở Daily Sale Report | 1. Hover/click icon (i) cạnh "Sale" | | 1. Tooltip: "Total sale amount of the order, including refund/partial refund values after discount is applied, excluding Tax and Tip." | | | |
+| 5 | POS | Business Snapshot | Daily Sale Report | Mô tả card Sale hiển thị inline | Đang ở Daily Sale Report | 1. Xem text mô tả dưới tiêu đề card "Sale" | | 1. Text hiển thị sẵn: "Total sale amount of the order, including refund/partial refund values after discount is applied, excluding Tax and Tip." | | | // UI mới: text inline, không tooltip |
 | 6 | POS | Business Snapshot | Daily Sale Report | Total Tip = tổng Tip, không tính order Cancel | Có order có Tip + order cancel có Tip | 1. Mở báo cáo<br>2. Đọc card Total Tip | Order A Tip 30, Order B Tip 25, Order C (cancel) Tip 40 | 1. Total Tip = 30 + 25 = **$55.00**<br>2. Tip của order cancel (40) KHÔNG được tính | | | |
-| 7 | POS | Business Snapshot | Daily Sale Report | Tooltip card Total Tips | Đang ở Daily Sale Report | 1. Hover/click icon (i) cạnh "Total Tip" | | 1. Tooltip: "Total tips received, not included in sales revenue but counted in collected amounts." | | | |
+| 7 | POS | Business Snapshot | Daily Sale Report | Mô tả card Total Tips hiển thị inline | Đang ở Daily Sale Report | 1. Xem text mô tả dưới tiêu đề card "Total Tip" | | 1. Text hiển thị sẵn: "Total tips received, not included in sales revenue but counted in collected amounts." | | | // UI mới: text inline, không tooltip |
 | 8 | POS | Business Snapshot | Daily Sale Report | Total Payment = doanh thu cuối gồm Gift Card Redemption | Có sale + tip + tax + gift card redemption | 1. Mở báo cáo<br>2. Đọc card Total Payment | Amount Collected 3,706.55; Gift Card 4,650 | 1. Total Payment = Amount Collected + Gift Card Redemption = **$8,356.55**<br>2. Bằng giá trị TOTAL PAYMENT ở Payment Detail | | | |
-| 9 | POS | Business Snapshot | Daily Sale Report | Tooltip card Total Payment | Đang ở Daily Sale Report | 1. Hover/click icon (i) cạnh "Total Payment" | | 1. Tooltip: "The final revenue includes Gift Card Redemption." | | | |
+| 9 | POS | Business Snapshot | Daily Sale Report | Mô tả card Total Payment hiển thị inline | Đang ở Daily Sale Report | 1. Xem text mô tả dưới tiêu đề card "Total Payment" | | 1. Text hiển thị sẵn: "The final revenue includes Gift Card Redemption." | | | // UI mới: text inline, không tooltip |
 | 10 | POS | Business Snapshot | Daily Sale Report | So sánh "vs Yesterday" hiển thị % tăng/giảm đúng chiều | Có dữ liệu hôm nay và hôm qua | 1. Mở báo cáo<br>2. Đọc % "vs Yesterday" trên từng card | Hôm qua Sale 350, hôm nay 8,151.55 | 1. Mỗi card hiển thị % chênh lệch so với hôm qua<br>2. Tăng → mũi tên/nhãn tăng (xanh); giảm → giảm (đỏ)<br>3. % tính đúng: (today-yesterday)/yesterday | | | |
 | 11 | POS | Business Snapshot | Daily Sale Report | Chart Sale hiển thị doanh số theo từng khung giờ trong ngày | Có order rải theo các giờ | 1. Mở báo cáo<br>2. Xem chart "Sale" | Order lúc 8AM, 1PM, 3PM | 1. Trục X = giờ (12AM → 10PM)<br>2. Cột Sale đứng đúng khung giờ phát sinh order<br>3. Chiều cao cột tỉ lệ với Sale của giờ đó | | | |
 | 12 | POS | Filter ngày | Daily Sale Report | Chọn một ngày khác bằng date picker, báo cáo load lại theo ngày đó | Có dữ liệu của ngày quá khứ | 1. Click vào ô ngày<br>2. Chọn ngày quá khứ có dữ liệu<br>3. Quan sát báo cáo | Chọn ngày có 3 order | 1. Tiêu đề panel phải đổi sang ngày đã chọn<br>2. Cards + chart + Order Detail + Income/Payment Detail cập nhật theo ngày chọn<br>3. Nút "Today" cho phép quay lại hôm nay | | | |
@@ -45,10 +45,10 @@
 | Yêu cầu / mục trong spec | TC phủ |
 |---------------------------|--------|
 | Mở màn hình + filter mặc định Today | 1 |
-| Orders count (loại cancel/refund/manual refund) + tooltip | 2, 3 |
-| Sale (sau discount, loại Tip/Tax/Cancel) + tooltip | 4, 5 |
-| Total Tips (loại Cancel) + tooltip | 6, 7 |
-| Total Payment (gồm Gift Card Redemption) + tooltip | 8, 9 |
+| Orders count (loại cancel/refund/manual refund) + mô tả inline | 2, 3 |
+| Sale (sau discount, loại Tip/Tax/Cancel) + mô tả inline | 4, 5 |
+| Total Tips (loại Cancel) + mô tả inline | 6, 7 |
+| Total Payment (gồm Gift Card Redemption) + mô tả inline | 8, 9 |
 | So sánh vs Yesterday | 10 |
 | Chart Sale theo giờ | 11 |
 | Filter cho phép chọn từng ngày | 12, 13 |

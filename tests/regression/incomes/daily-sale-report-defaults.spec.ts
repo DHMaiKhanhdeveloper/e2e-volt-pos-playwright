@@ -4,23 +4,27 @@ import { OWNER_PASSCODE } from '@data/static/staff';
 import type { ChartCard } from '@pages/pos/DailySaleReportPage';
 
 /**
- * Daily Sale Report — defaults, tooltips, %vs Yesterday, order code, print.
+ * Daily Sale Report — defaults, card descriptions, %vs Yesterday, order code, print.
  *
  * Cluster A — Tier 1, no data setup required. All TCs simply verify the
  * UI matches the spec when the report opens against today's data.
  *
  * Coverage:
  *   TC-1  Open with default filter = Today, 4 stat cards + details panel
- *   TC-3  Tooltip text — Total Order
- *   TC-5  Tooltip text — Sale
- *   TC-7  Tooltip text — Total Tip
- *   TC-9  Tooltip text — Total Payment
+ *   TC-3  Description text — Total Order
+ *   TC-5  Description text — Sale
+ *   TC-7  Description text — Total Tip
+ *   TC-9  Description text — Total Payment
  *   TC-10 "vs Yesterday" label + percentage shape on every card
  *   TC-14 First Order # cell matches `OD\d{6}-\d+` format
  *   TC-25 Print button is enabled and clickable
+ *
+ * NOTE: Volt POS dropped the ⓘ hover tooltip — each card's helper copy is now
+ * rendered as a static `<p>` inline inside the card. TC-3/5/7/9 assert that
+ * inline text directly (no hover); the wording is unchanged from the old tooltip.
  */
 
-const TOOLTIPS: Record<ChartCard, string> = {
+const CARD_DESCRIPTIONS: Record<ChartCard, string> = {
   'Total Order': 'Total number of order, excluding cancel/refunds/ manual refunds',
   Sale: 'Total sale amount of the order, including refund/partial refund values after discount is applied, excluding Tax and Tip.',
   'Total Tip':
@@ -28,7 +32,7 @@ const TOOLTIPS: Record<ChartCard, string> = {
   'Total Payment': 'The final revenue includes Gift Card Redemption.',
 };
 
-test.describe(`Daily Sale Report — defaults & tooltips ${Tag.REGRESSION}`, () => {
+test.describe(`Daily Sale Report — defaults & card descriptions ${Tag.REGRESSION}`, () => {
   test.beforeEach(async ({ dailySaleReportPage, passcodeDialog }) => {
     await dailySaleReportPage.goto();
     await passcodeDialog.enterPasscode(OWNER_PASSCODE);
@@ -62,11 +66,13 @@ test.describe(`Daily Sale Report — defaults & tooltips ${Tag.REGRESSION}`, () 
     await expect(page.getByRole('heading', { name: 'Payment Details' })).toBeVisible();
   });
 
-  for (const [card, expected] of Object.entries(TOOLTIPS) as Array<[ChartCard, string]>) {
-    test(`TC-3/5/7/9: tooltip — ${card}`, async ({ dailySaleReportPage }) => {
-      const tooltip = await dailySaleReportPage.showCardTooltip(card);
+  for (const [card, expected] of Object.entries(CARD_DESCRIPTIONS) as Array<[ChartCard, string]>) {
+    test(`TC-3/5/7/9: card description — ${card}`, async ({ dailySaleReportPage }) => {
+      // The helper copy is now static text inside the card (no hover needed).
+      const description = dailySaleReportPage.cardDescription(card);
+      await expect(description).toBeVisible();
       // Compare normalised whitespace so a stray double-space won't flake.
-      const actual = ((await tooltip.textContent()) ?? '').replace(/\s+/g, ' ').trim();
+      const actual = ((await description.textContent()) ?? '').replace(/\s+/g, ' ').trim();
       const wanted = expected.replace(/\s+/g, ' ').trim();
       expect(actual).toBe(wanted);
     });

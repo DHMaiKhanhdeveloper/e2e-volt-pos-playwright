@@ -72,7 +72,9 @@ export class DailySaleReportPage extends BasePage {
    */
   async waitForReady(): Promise<void> {
     await expect(this.heading).toBeVisible();
-    await expect(this.card('Sale')).toBeVisible({ timeout: 15_000 });
+    // The cards only mount after the live GraphQL query resolves; a cold/loaded
+    // dev server can take well over 15s, so give the query generous headroom.
+    await expect(this.card('Sale')).toBeVisible({ timeout: 30_000 });
   }
 
   // ---------------------------------------------------------- stats cards
@@ -114,22 +116,12 @@ export class DailySaleReportPage extends BasePage {
   }
 
   /**
-   * The ⓘ icon button inside a card. Card names map to button accessible names
-   * as `<card name> info` — e.g. "Total Order info".
+   * The card's inline description `<p>`. Volt POS used to hide this copy behind
+   * an ⓘ hover tooltip, but the UI now renders it as static text directly inside
+   * each card — there is exactly one paragraph per card. Caller asserts its text.
    */
-  cardInfoButton(name: ChartCard): Locator {
-    return this.page.getByRole('button', { name: `${name} info`, exact: true });
-  }
-
-  /**
-   * Hover the ⓘ icon and return the resulting `role="tooltip"`. Caller asserts
-   * its text. Tooltip auto-dismisses on mouse out — keep the read tight.
-   */
-  async showCardTooltip(name: ChartCard): Promise<Locator> {
-    await this.cardInfoButton(name).hover();
-    const tooltip = this.page.getByRole('tooltip');
-    await expect(tooltip).toBeVisible();
-    return tooltip;
+  cardDescription(name: ChartCard): Locator {
+    return this.card(name).locator('p').first();
   }
 
   /** Reads the current `activeChart` value from the URL. Returns `null` if absent. */
