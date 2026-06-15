@@ -131,5 +131,5 @@ Màn hình chia **2 panel**. **Panel trái:** bộ lọc (dropdown kỳ `Custom`
 > Cập nhật khi triển khai. Income Summary route: `/incomes/income-summary?from=<unix>&to=<unix>&groupBy=day|week|month[&detailId=<from>-<to>]`. Gated bằng passcode.
 > GraphQL: `getIncomeSummaryLive(reportDate: RFC3339)` cho hôm nay; `getIncomeSummary(from,to: YYYY-MM-DD)` → `reportStoreDailyIncomeList` cho khoảng đã chốt.
 
-- **Tier 1 (real DB, read-only / structural):** filter mặc định, Day/Week/Month, year dropdown, nhãn so sánh, bảng có cột Tax (bỏ Net Income), click row → detail header, 5 nhóm detail render, Print, đối chiếu Total Payment giữa table/Payment/Sale Details, hiển thị số âm. → `tests/regression/incomes/income-summary-*.spec.ts`.
+- **Tier 1 (real DB, read-only / structural):** filter mặc định, Day/Week/Month, year dropdown, nhãn so sánh, bảng có cột Tax (bỏ Net Income), click row → detail header, 5 nhóm detail render, Print, đối chiếu Total Payment giữa table/Payment/Sale Details, hiển thị số âm. → `tests/regression/incomes/income-summary/income-summary-*.spec.ts`.
 - **Tier 3 (mocked dataset May 29 loss day):** các công thức Payment/Sale/Supply Fee/Staff Payout/Salon Earnings với số chính xác. → cần mock `getIncomeSummaryLive` + query detail panel (đang bổ sung).
