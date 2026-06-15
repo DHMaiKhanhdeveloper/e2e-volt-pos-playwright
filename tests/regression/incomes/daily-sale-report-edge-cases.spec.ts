@@ -1,4 +1,5 @@
 import { test, expect } from '@fixtures/index';
+import type { Route } from '@playwright/test';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
 
@@ -11,9 +12,21 @@ import { OWNER_PASSCODE } from '@data/static/staff';
  *   TC-41 error fallback (return 500)
  *   TC-42 %vs Yesterday with yesterday = 0 (must not be Infinity/NaN)
  *
- * The mock intercepts ANY GraphQL POST and dispatches by `operationName`.
+ * The mock intercepts ANY GraphQL POST and dispatches by operation name.
  * Operations we don't care about fall through to the real backend.
  */
+
+/**
+ * The Volt POS GraphQL client sends `operationName: null` and embeds the
+ * operation name inside the `query` text (e.g. `query storeDailyIncomeLive`).
+ * Read it from whichever place is populated so route mocks match reliably.
+ */
+const operationNameOf = (route: Route): string | undefined => {
+  const body = route.request().postDataJSON();
+  if (body?.operationName) return body.operationName as string;
+  const query = typeof body?.query === 'string' ? body.query : '';
+  return /\bquery\s+(\w+)/.exec(query)?.[1];
+};
 
 /** Build a "blank" daily income row with all values = `value` cents. */
 const buildRow = (date: string, value = 0) => ({
@@ -67,7 +80,7 @@ test.describe(`Daily Sale Report — edge cases (mocked) ${Tag.REGRESSION}`, () 
     passcodeDialog,
   }) => {
     await page.route('**/graphql', async (route) => {
-      const op = route.request().postDataJSON()?.operationName as string | undefined;
+      const op = operationNameOf(route);
       if (op?.startsWith('storeDailyIncome')) {
         await route.fulfill({
           status: 500,
@@ -99,8 +112,7 @@ test.describe(`Daily Sale Report — edge cases (mocked) ${Tag.REGRESSION}`, () 
     const toIsoDate = (d: Date) => d.toISOString().slice(0, 10);
 
     await page.route('**/graphql', async (route) => {
-      const body = route.request().postDataJSON();
-      const op = body?.operationName as string | undefined;
+      const op = operationNameOf(route);
 
       if (op === 'storeDailyIncome') {
         await route.fulfill({

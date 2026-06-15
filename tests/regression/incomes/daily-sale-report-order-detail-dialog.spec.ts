@@ -86,13 +86,20 @@ test.describe(`Daily Sale Report — Order Detail dialog ${Tag.REGRESSION}`, () 
     if (codes.length < 2) return;
     const [first, second] = codes;
 
+    // The `orderId` URL param is an internal UUID, not the visible OD-code,
+    // so capture the actual value from the URL rather than asserting on the
+    // order code.
     await dailySaleReportPage.openOrderDetail(first);
-    await expect(page).toHaveURL(new RegExp(`orderId=${first}`));
+    const firstId = new URL(page.url()).searchParams.get('orderId');
+    expect(firstId, 'first open sets an orderId').toBeTruthy();
 
     await dailySaleReportPage.closeOrderDetailViaButton();
     await dailySaleReportPage.openOrderDetail(second);
+    const secondId = new URL(page.url()).searchParams.get('orderId');
+    expect(secondId, 'second open sets an orderId').toBeTruthy();
 
-    await expect(page).toHaveURL(new RegExp(`orderId=${second}`));
-    await expect(page).not.toHaveURL(new RegExp(`orderId=${first}\\b`));
+    // Reopening with a different row swaps the orderId — the first one must
+    // not leak into the second dialog's URL.
+    expect(secondId, 'orderId is replaced, not appended').not.toBe(firstId);
   });
 });

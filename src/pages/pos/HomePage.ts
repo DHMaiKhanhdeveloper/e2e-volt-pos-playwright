@@ -66,11 +66,14 @@ export class HomePage extends BasePage {
   }
 
   async selectService(serviceName: string): Promise<void> {
+    // Catalog services are <li> cards in the services grid (implicit
+    // listitem role). Click the matching one.
     const serviceItem = this.page.getByRole('listitem').filter({ hasText: serviceName }).first();
     await serviceItem.click();
-    // Wait for the service to appear in the order summary instead of a fixed sleep.
-    // The Pay button enabling is the downstream signal we ultimately care about.
-    await expect(this.payButton).toBeEnabled({ timeout: 2_000 });
+    // Adding a service round-trips a GraphQL mutation before the order picks
+    // up the line and Pay enables — give that the full action timeout rather
+    // than a tight 2s window that flakes on a busy backend.
+    await expect(this.payButton).toBeEnabled({ timeout: 10_000 });
   }
 
   async getOrderTotal(): Promise<string> {
@@ -93,7 +96,11 @@ export class HomePage extends BasePage {
   }
 
   async getOrderNumber(): Promise<string> {
-    const orderText = await this.page.getByText(/Order #OD/).textContent();
-    return orderText?.replace('Order ', '') ?? '';
+    // The home banner shows "Order #OD260612-25638211". Extract the canonical
+    // code (no "Order " prefix, no leading "#") so it matches how the code is
+    // rendered everywhere else — Order History rows and the Daily Sale Report
+    // table both use the bare `OD\d{6}-\d+` form.
+    const orderText = (await this.page.getByText(/Order #OD/).textContent()) ?? '';
+    return orderText.match(/OD\d{6}-\d+/)?.[0] ?? '';
   }
 }

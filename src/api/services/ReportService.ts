@@ -1,8 +1,14 @@
 import { GraphQLClient } from '@api/clients/GraphQLClient';
 import {
   DailyIncomeTotals,
+  StaffDailyIncomeListLiveResponse,
+  StaffDailyIncomeOrderRow,
+  StaffDailyIncomeOrdersLiveResponse,
+  StaffDailyIncomeRow,
   StoreDailyIncomeListResponse,
   StoreDailyIncomeLiveResponse,
+  StoreDailyIncomeOrderRow,
+  StoreDailyIncomeOrdersLiveResponse,
   StoreDailyIncomeRow,
 } from '@api/models/Report';
 
@@ -57,6 +63,70 @@ const STORE_DAILY_INCOME_LIVE_QUERY = `
   }
 `;
 
+/**
+ * The three per-row "live" reports below have NO settled-snapshot variant in
+ * the app — they are real-time and only meaningful for *today*. Each takes the
+ * same `reportDate` (a full RFC3339 timestamp = start of merchant-local day).
+ */
+const STORE_DAILY_INCOME_ORDERS_LIVE_QUERY = `
+  query storeDailyIncomeOrdersLive($reportDate: String!) {
+    storeDailyIncomeOrdersLive(reportDate: $reportDate) {
+      id
+      orderId
+      saleAmount
+      refundAmount
+      tipAmount
+      giftCardSaleRedemptionAmount
+      taxAmount
+      total
+      transactionType
+      reportDate
+      occurredAt
+      orderCode
+    }
+  }
+`;
+
+const STAFF_DAILY_INCOME_LIST_LIVE_QUERY = `
+  query staffDailyIncomeListLive($reportDate: String!) {
+    staffDailyIncomeListLive(reportDate: $reportDate) {
+      staffId
+      date
+      numberOfOrders
+      sale
+      refund
+      subtotal
+      supplyFee
+      staffCommission
+      cleanUpFee
+      tip
+      totalIncome
+      staffSalary
+      rate
+      compensationType
+      salarySetting
+    }
+  }
+`;
+
+const STAFF_DAILY_INCOME_ORDERS_LIVE_QUERY = `
+  query staffDailyIncomeOrdersLive($reportDate: String!) {
+    staffDailyIncomeOrdersLive(reportDate: $reportDate) {
+      id
+      orderId
+      staffId
+      reportDate
+      saleAmount
+      refundAmount
+      supplyFee
+      tipAmount
+      transactionType
+      occurredAt
+      orderCode
+    }
+  }
+`;
+
 const isSameLocalDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() &&
   a.getMonth() === b.getMonth() &&
@@ -107,6 +177,45 @@ export class ReportService {
       variables: { from: startOfDayIso(date), to: endOfDayIso(date) },
     });
     return data.reportStoreDailyIncomeList[0] ?? null;
+  }
+
+  /**
+   * Per-order breakdown for the store's day (`storeDailyIncomeOrdersLive`).
+   * Live-only — pass today (the default) for meaningful data. Newest first.
+   */
+  async getDailyIncomeOrders(date: Date = new Date()): Promise<StoreDailyIncomeOrderRow[]> {
+    const data = await this.client.query<StoreDailyIncomeOrdersLiveResponse>(
+      STORE_DAILY_INCOME_ORDERS_LIVE_QUERY,
+      {
+        operationName: 'storeDailyIncomeOrdersLive',
+        variables: { reportDate: startOfDayIso(date) },
+      },
+    );
+    return data.storeDailyIncomeOrdersLive;
+  }
+
+  /** Per-staff income for the day (`staffDailyIncomeListLive`). Live-only. */
+  async getStaffDailyIncomeList(date: Date = new Date()): Promise<StaffDailyIncomeRow[]> {
+    const data = await this.client.query<StaffDailyIncomeListLiveResponse>(
+      STAFF_DAILY_INCOME_LIST_LIVE_QUERY,
+      {
+        operationName: 'staffDailyIncomeListLive',
+        variables: { reportDate: startOfDayIso(date) },
+      },
+    );
+    return data.staffDailyIncomeListLive;
+  }
+
+  /** Per-staff per-order lines for the day (`staffDailyIncomeOrdersLive`). Live-only. */
+  async getStaffDailyIncomeOrders(date: Date = new Date()): Promise<StaffDailyIncomeOrderRow[]> {
+    const data = await this.client.query<StaffDailyIncomeOrdersLiveResponse>(
+      STAFF_DAILY_INCOME_ORDERS_LIVE_QUERY,
+      {
+        operationName: 'staffDailyIncomeOrdersLive',
+        variables: { reportDate: startOfDayIso(date) },
+      },
+    );
+    return data.staffDailyIncomeOrdersLive;
   }
 
   /**

@@ -1,8 +1,21 @@
 import { test, expect } from '@fixtures/index';
+import type { Route } from '@playwright/test';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
 import { formatUsdFromCents } from '@utils/moneyUtils';
 import type { StoreDailyIncomeRow } from '@api/models/Report';
+
+/**
+ * The Volt POS GraphQL client sends `operationName: null` and embeds the
+ * operation name inside the `query` text (e.g. `query storeDailyIncomeLive`).
+ * Read it from whichever place is populated so route mocks match reliably.
+ */
+const operationNameOf = (route: Route): string | undefined => {
+  const body = route.request().postDataJSON();
+  if (body?.operationName) return body.operationName as string;
+  const query = typeof body?.query === 'string' ? body.query : '';
+  return /\bquery\s+(\w+)/.exec(query)?.[1];
+};
 
 /**
  * Daily Sale Report — mocked GraphQL scenarios (Tier 3).
@@ -55,7 +68,7 @@ const installMockedRow = async (
   row: StoreDailyIncomeRow,
 ) => {
   await page.route('**/graphql', async (route) => {
-    const op = route.request().postDataJSON()?.operationName as string | undefined;
+    const op = operationNameOf(route);
     if (op === 'storeDailyIncome') {
       await route.fulfill({
         status: 200,

@@ -114,22 +114,13 @@ export class DailySaleReportPage extends BasePage {
   }
 
   /**
-   * The ⓘ icon button inside a card. Card names map to button accessible names
-   * as `<card name> info` — e.g. "Total Order info".
+   * The card's helper text. Volt POS renders the description as an
+   * always-visible `<p>` directly under the card heading — it is NOT a
+   * hover tooltip and there is no ⓘ info button. The paragraph is the only
+   * `<p>` inside the card, so scope to it.
    */
-  cardInfoButton(name: ChartCard): Locator {
-    return this.page.getByRole('button', { name: `${name} info`, exact: true });
-  }
-
-  /**
-   * Hover the ⓘ icon and return the resulting `role="tooltip"`. Caller asserts
-   * its text. Tooltip auto-dismisses on mouse out — keep the read tight.
-   */
-  async showCardTooltip(name: ChartCard): Promise<Locator> {
-    await this.cardInfoButton(name).hover();
-    const tooltip = this.page.getByRole('tooltip');
-    await expect(tooltip).toBeVisible();
-    return tooltip;
+  cardDescription(name: ChartCard): Locator {
+    return this.card(name).getByRole('paragraph').first();
   }
 
   /** Reads the current `activeChart` value from the URL. Returns `null` if absent. */
@@ -314,6 +305,9 @@ export class DailySaleReportPage extends BasePage {
   }
 
   errorMessage(): Locator {
-    return this.page.getByText(/Failed to load|Something went wrong/i);
+    // On a failed load Volt POS renders one paragraph per broken query
+    // (e.g. "Failed to load store daily income data!" plus a "...detail
+    // data!" sibling), so match the first to avoid a strict-mode violation.
+    return this.page.getByText(/Failed to load|Something went wrong/i).first();
   }
 }
