@@ -7,9 +7,15 @@ import { openRecentDetail } from './incomeSummary.helpers';
  * Income Summary — Staff Payout (VP-1048 TC-38…51).
  *
  * Anchors on the most recent settled past day. Asserts the UI renders the API
- * values (data-driven correctness) and the section totals reconcile:
- *   Total Staff Payout = Commission + Tip − Clean Up Fee + Salary   (QC#12 fix)
- *   Pay 1 + Pay 2 + Staff Salary = Total Staff Payout               (TC-47)
+ * values (data-driven correctness) and the section total reconciles:
+ *   Total Staff Payout = Pay 1 + Pay 2   (the pay-split partitions the total;
+ *   Staff Salary is already inside the split, not added on top — resolves ⚠️#1)
+ *
+ * The refined VP-1048 spec expands the total to
+ *   Commission + Tip + Salary − Supply Fee − Clean Up − Discount/Card charges,
+ * but the Discount/Card charge line items aren't rendered or exposed by the API
+ * (⚠️#5/#6), so that component sum can't be reconstructed here — we verify the
+ * authoritative API total instead.
  *
  * Setting-dependent cases (exact commission %, salary type, pay-split %,
  * pay-period close/estimate) need staff/commission fixtures the shared dev
@@ -35,7 +41,7 @@ test.describe(`Income Summary — Staff Payout (real data) ${Tag.REGRESSION}`, (
     expect(valueAfterLabel(sp, 'Total Service'), 'Total Service').toBe(row.staffPayoutTotalService);
   });
 
-  test('TC-44: Total Staff Payout = Commission + Tip − Clean Up + Salary', async ({
+  test('TC-44 + TC-47: Total Staff Payout = Pay 1 + Pay 2 (Salary inside the split)', async ({
     incomeSummaryPage,
     passcodeDialog,
     incomeSummaryService,
@@ -46,24 +52,24 @@ test.describe(`Income Summary — Staff Payout (real data) ${Tag.REGRESSION}`, (
     const sp = d.sections['Staff Payout'];
     const { row } = d;
 
+    // UI shows the authoritative API total.
     expect(valueAfterLabel(sp, 'Total Staff Payout'), 'UI Total Staff Payout').toBe(
       row.staffPayoutTotal,
     );
-    // QC#12: clean-up fee is SUBTRACTED, not added.
-    expect(row.staffPayoutTotal, 'Commission + Tip − CleanUp + Salary').toBe(
-      row.staffPayoutCommission +
-        row.staffPayoutTip -
-        row.staffPayoutCleanUpFee +
-        row.staffPayoutSalary,
+    // TC-44/47: the total is partitioned by the Pay 1 + Pay 2 split, with Staff
+    // Salary already inside it (not added on top). The expanded component formula
+    // (… − Supply Fee − Discount/Card charges) can't be reconstructed from the
+    // rendered fields — those charge line items aren't exposed (⚠️#5/#6).
+    expect(row.staffPayoutTotal, 'Total Staff Payout = Pay 1 + Pay 2').toBe(
+      row.staffPayoutPay1 + row.staffPayoutPay2,
     );
   });
 
-  // Pay 1 / Pay 2 split (TC-45, 46) depends on a per-staff commission-split
-  // setting and only renders under the "Show more" expander with dynamic "%"
-  // subtext, so it can't be asserted deterministically on shared-env data.
-  // TC-47 (Pay1 + Pay2 + Salary = Total) is additionally unverified — on real
-  // data the three don't sum to Total, matching the doc's open question ⚠️ #1.
-  test.fixme('TC-45 + TC-46 + TC-47: Pay 1 / Pay 2 split & their relation to Total (needs split-setting fixture + spec confirmation)', () => {});
+  // Pay 1 / Pay 2 split TEXT (TC-45, 46) — the exact value vs the dynamic "%"
+  // subtext under "Show more" depends on a per-staff commission-split setting, so
+  // it can't be asserted deterministically on shared-env data (the Total = Pay 1
+  // + Pay 2 relation itself is covered above).
+  test.fixme('TC-45 + TC-46: Pay 1 / Pay 2 split values & dynamic % text (needs split-setting fixture)', () => {});
 
   // TC-48 (Show more / Show less toggle) is covered by the overview spec.
   // Remaining setting-dependent cases need a staff/commission/pay-period fixture

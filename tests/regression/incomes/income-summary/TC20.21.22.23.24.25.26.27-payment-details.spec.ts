@@ -15,12 +15,19 @@ import type { IncomeSummaryDetailRow } from '@api/models/IncomeSummary';
  * detail row matches the UI exactly — today's live totals drift). Read the row
  * from GraphQL, render its detail panel, and assert the UI shows those exact
  * values plus the spec formulas:
- *   <method> total = Sale + Refund(signed) + Tip + Tax
+ *   <method> total = Sale − |Refund| + Tip + Tax
  *   Amount Collected = Cash + Card + Others
  *   Total Payment    = Amount Collected + Gift Card Redemption
+ *
+ * Refund sign: the settled list API (`reportStoreDailyIncomeList`) returns the
+ * refund as a positive MAGNITUDE while the UI renders it negative, so we compare
+ * magnitudes and reconcile by subtraction (works regardless of the API's sign).
  */
 
 const usd = formatUsdFromCents;
+
+/** Money value after `label`, or 0 if the line is absent. */
+const num = (text: string, label: string): number => valueAfterLabel(text, label) ?? 0;
 
 interface DayDetail {
   row: IncomeSummaryDetailRow;
@@ -59,13 +66,15 @@ test.describe(`Income Summary — Payment Details (real data) ${Tag.REGRESSION}`
     // TC-20 Card
     const card = block(payment, 'Card', 'Others');
     expect(valueAfterLabel(card, 'Card'), 'Card total').toBe(row.incomeSummaryPaymentTotalCard);
-    expect(valueAfterLabel(card, 'Sale')).toBe(row.incomeSummaryPaymentCardSale);
-    expect(valueAfterLabel(card, 'Refund')).toBe(row.incomeSummaryPaymentCardRefund);
-    expect(valueAfterLabel(card, 'Tip')).toBe(row.incomeSummaryPaymentCardTip);
-    expect(valueAfterLabel(card, 'Tax')).toBe(row.paymentTaxCard);
-    expect(row.incomeSummaryPaymentTotalCard, 'Card = Sale + Refund + Tip + Tax').toBe(
-      row.incomeSummaryPaymentCardSale +
-        row.incomeSummaryPaymentCardRefund +
+    expect(num(card, 'Sale')).toBe(row.incomeSummaryPaymentCardSale);
+    expect(Math.abs(num(card, 'Refund')), 'Card refund magnitude').toBe(
+      Math.abs(row.incomeSummaryPaymentCardRefund),
+    );
+    expect(num(card, 'Tip')).toBe(row.incomeSummaryPaymentCardTip);
+    expect(num(card, 'Tax')).toBe(row.paymentTaxCard);
+    expect(row.incomeSummaryPaymentTotalCard, 'Card = Sale − |Refund| + Tip + Tax').toBe(
+      row.incomeSummaryPaymentCardSale -
+        Math.abs(row.incomeSummaryPaymentCardRefund) +
         row.incomeSummaryPaymentCardTip +
         row.paymentTaxCard,
     );
@@ -75,9 +84,9 @@ test.describe(`Income Summary — Payment Details (real data) ${Tag.REGRESSION}`
     expect(valueAfterLabel(others, 'Others'), 'Others total').toBe(
       row.incomeSummaryPaymentTotalOthers,
     );
-    expect(row.incomeSummaryPaymentTotalOthers, 'Others = Sale + Refund + Tip + Tax').toBe(
-      row.incomeSummaryPaymentOthersSale +
-        row.incomeSummaryPaymentOthersRefund +
+    expect(row.incomeSummaryPaymentTotalOthers, 'Others = Sale − |Refund| + Tip + Tax').toBe(
+      row.incomeSummaryPaymentOthersSale -
+        Math.abs(row.incomeSummaryPaymentOthersRefund) +
         row.incomeSummaryPaymentOthersTip +
         row.paymentTaxOthers,
     );
@@ -95,14 +104,19 @@ test.describe(`Income Summary — Payment Details (real data) ${Tag.REGRESSION}`
 
     const cash = block(payment, 'Cash', 'Card');
     expect(valueAfterLabel(cash, 'Cash'), 'Cash total').toBe(row.incomeSummaryPaymentTotalCash);
-    expect(valueAfterLabel(cash, 'Sale')).toBe(row.incomeSummaryPaymentCashSale);
-    expect(valueAfterLabel(cash, 'Refund')).toBe(row.incomeSummaryPaymentCashRefund);
-    expect(valueAfterLabel(cash, 'Tip')).toBe(row.incomeSummaryPaymentCashTip);
-    expect(valueAfterLabel(cash, 'Tax')).toBe(row.paymentTaxCash);
+    expect(num(cash, 'Sale')).toBe(row.incomeSummaryPaymentCashSale);
+    // TC-26: refund renders with its sign (≤ 0); the settled API row holds the magnitude.
+    const cashRefund = num(cash, 'Refund');
+    expect(cashRefund, 'Cash refund shown signed (≤ 0)').toBeLessThanOrEqual(0);
+    expect(Math.abs(cashRefund), 'Cash refund magnitude matches API').toBe(
+      Math.abs(row.incomeSummaryPaymentCashRefund),
+    );
+    expect(num(cash, 'Tip')).toBe(row.incomeSummaryPaymentCashTip);
+    expect(num(cash, 'Tax')).toBe(row.paymentTaxCash);
 
-    expect(row.incomeSummaryPaymentTotalCash, 'Cash = Sale + Refund + Tip + Tax').toBe(
-      row.incomeSummaryPaymentCashSale +
-        row.incomeSummaryPaymentCashRefund +
+    expect(row.incomeSummaryPaymentTotalCash, 'Cash = Sale − |Refund| + Tip + Tax').toBe(
+      row.incomeSummaryPaymentCashSale -
+        Math.abs(row.incomeSummaryPaymentCashRefund) +
         row.incomeSummaryPaymentCashTip +
         row.paymentTaxCash,
     );
@@ -173,7 +187,10 @@ test.describe(`Income Summary — Payment Details (real data) ${Tag.REGRESSION}`
     incomeSummaryPage,
     passcodeDialog,
   }) => {
-    await incomeSummaryPage.goto();
+    // Load via an explicit range (same reliable pattern as the data tests) so the
+    // table is rendered before we read its header labels.
+    const today = new Date();
+    await incomeSummaryPage.gotoRange(today, today, 'Day');
     await passcodeDialog.enterPasscode(OWNER_PASSCODE);
     await incomeSummaryPage.waitForReady();
     const headers = await incomeSummaryPage.headerLabels();

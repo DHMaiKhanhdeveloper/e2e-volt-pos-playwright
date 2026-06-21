@@ -86,6 +86,40 @@ export interface StaffDailyIncomeListLiveResponse {
   staffDailyIncomeListLive: StaffDailyIncomeRow[];
 }
 
+/**
+ * One staff member's **settled** daily income (`reportStaffDailyIncomeList`) —
+ * the past-day counterpart of `staffDailyIncomeListLive`. Unlike the live query,
+ * this returns the immutable snapshot for a given date, so the Income Summary
+ * Staff Payout section can be cross-checked against per-staff data.
+ *
+ * Note: only `tip`, `cleanUpFee`, `staffSalary` and `subtotal` (Total Service)
+ * sum cleanly to the store-level Staff Payout. `staffCommission`, `pay1`, `pay2`,
+ * `supplyFee` and `totalIncome` do NOT — the store rollup applies the staff/salon
+ * split and so isn't a plain per-staff sum.
+ */
+export interface StaffDailyIncomeSettledRow {
+  staffId: string;
+  date: string;
+  numberOfOrders: number;
+  sale: number;
+  refund: number;
+  subtotal: number;
+  supplyFee: number;
+  staffCommission: number;
+  cleanUpFee: number;
+  tip: number;
+  totalIncome: number;
+  staffSalary: number;
+  cardFeeCharge: number;
+  pay1: number;
+  pay2: number;
+  rate: number;
+}
+
+export interface StaffDailyIncomeSettledListResponse {
+  reportStaffDailyIncomeList: StaffDailyIncomeSettledRow[];
+}
+
 /** One staff member's per-order line (`staffDailyIncomeOrdersLive`). */
 export interface StaffDailyIncomeOrderRow {
   id: string;

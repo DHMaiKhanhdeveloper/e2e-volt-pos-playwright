@@ -78,7 +78,7 @@ export class IncomeSummaryPage extends BasePage {
   }
 
   async waitForReady(): Promise<void> {
-    await expect(this.heading).toBeVisible();
+    await expect(this.heading).toBeVisible({ timeout: 15_000 });
     await expect(this.totalIncomeHeading).toBeVisible({ timeout: 15_000 });
   }
 
@@ -205,9 +205,16 @@ export class IncomeSummaryPage extends BasePage {
    * The detail sections render `$0.00` placeholders before the GraphQL detail
    * query resolves. Wait for a known value (e.g. the period's Total Payment,
    * computed from the API row) to appear so reads don't catch placeholders.
+   *
+   * Scoped to the detail panel: the same money value also appears in the LEFT
+   * summary table, so a page-wide match would resolve early (while the panel is
+   * still showing `$0.00`) and reads would catch placeholders.
    */
   async waitForDetailLoaded(expectedValueText: string): Promise<void> {
-    await expect(this.page.getByText(expectedValueText).first()).toBeVisible({ timeout: 10_000 });
+    const detail = this.page
+      .getByText('Payment Details', { exact: true })
+      .locator('xpath=ancestor::*[.//*[normalize-space()="Salon Earnings"]][1]');
+    await expect(detail.getByText(expectedValueText).first()).toBeVisible({ timeout: 10_000 });
   }
 
   // ------------------------------------------------------- detail panel
