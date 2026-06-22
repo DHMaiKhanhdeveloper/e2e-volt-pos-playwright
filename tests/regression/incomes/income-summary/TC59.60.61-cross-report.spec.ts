@@ -7,10 +7,17 @@ import { Tag } from '@/types/testTags';
  * Both reports source the same settled daily row, so shared figures must agree.
  * We compare the two services directly for the most recent day that has data —
  * no UI needed, and immune to today's live drift.
+ *
+ * TC-59 uses the Daily Sale Report row as the BASE (source of truth) and asserts
+ * Income Summary matches it on every store-level field the two reports share:
+ * Sale / Tip / Tax (total + per method) / payment-method totals / Amount Collected
+ * / Total Payment. The detail-only blocks (Staff Payout, Salon Earnings, Supply
+ * Fee, Sale Details split) have NO Daily Sale Report counterpart, so they can't
+ * be cross-checked this way — they're covered by their own specs.
  */
 
 test.describe(`Income Summary — cross-report (real data) ${Tag.REGRESSION}`, () => {
-  test('TC-59: Daily Sale Report and Income Summary agree on Tax for the same day', async ({
+  test('TC-59: Income Summary matches the Daily Sale Report (base) on every shared figure', async ({
     reportService,
     incomeSummaryService,
   }) => {
@@ -21,9 +28,32 @@ test.describe(`Income Summary — cross-report (real data) ${Tag.REGRESSION}`, (
     const dsr = await reportService.getDailyIncome(found.date);
     test.skip(dsr === null, 'Daily Sale Report has no row for that day');
     if (!dsr) return;
+    const is = found.row;
 
-    // Tax is the same column in both reports → must be identical.
-    expect(dsr.incomeTaxAmount, 'DSR Tax == Income Summary Tax').toBe(found.row.incomeTaxAmount);
+    // Totals — Daily Sale Report value drives the expectation.
+    expect(dsr.incomeTaxAmount, 'Tax (total)').toBe(is.incomeTaxAmount);
+    expect(dsr.dailySaleSale, 'Sale (net total)').toBe(is.incomeNetTotal);
+    expect(dsr.dailySaleTip, 'Tip').toBe(is.incomeTip);
+    expect(dsr.dailySaleTotalPayment, 'Total Payment').toBe(is.incomeSummaryTotalPayment);
+
+    // Payment-method breakdown.
+    expect(dsr.dailySalePaymentAmountCollected, 'Amount Collected').toBe(
+      is.incomeSummaryPaymentAmountCollected,
+    );
+    expect(dsr.dailySalePaymentCash, 'Cash').toBe(is.incomeSummaryPaymentTotalCash);
+    expect(dsr.dailySalePaymentCard, 'Card').toBe(is.incomeSummaryPaymentTotalCard);
+    expect(dsr.dailySalePaymentOthers, 'Others').toBe(is.incomeSummaryPaymentTotalOthers);
+    expect(dsr.dailySalePaymentGiftCardRedemption, 'Gift Card Redemption').toBe(
+      is.incomeSummaryPaymentGiftCardRedemption,
+    );
+
+    // Per-method tax columns are the same field name in both rows.
+    expect(dsr.paymentTaxCash, 'Tax — Cash').toBe(is.paymentTaxCash);
+    expect(dsr.paymentTaxCard, 'Tax — Card').toBe(is.paymentTaxCard);
+    expect(dsr.paymentTaxOthers, 'Tax — Others').toBe(is.paymentTaxOthers);
+    expect(dsr.paymentTaxGiftCardRedemption, 'Tax — Gift Card Redemption').toBe(
+      is.paymentTaxGiftCardRedemption,
+    );
   });
 
   test('TC-60: Income Summary Total Refund = Service Refund + Product Refund', async ({

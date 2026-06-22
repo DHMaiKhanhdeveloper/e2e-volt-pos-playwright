@@ -9,6 +9,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@api/*": ["./src/api/*"],
+      "@db/*": ["./src/db/*"],
+      "@reports/*": ["./src/reports/*"],
       "@pages/*": ["./src/pages/*"],
       "@components/*": ["./src/components/*"],
       "@fixtures/*": ["./src/fixtures/*"],

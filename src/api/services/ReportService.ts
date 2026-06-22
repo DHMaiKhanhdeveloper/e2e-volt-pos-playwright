@@ -5,6 +5,8 @@ import {
   StaffDailyIncomeOrderRow,
   StaffDailyIncomeOrdersLiveResponse,
   StaffDailyIncomeRow,
+  StaffDailyIncomeSettledListResponse,
+  StaffDailyIncomeSettledRow,
   StoreDailyIncomeListResponse,
   StoreDailyIncomeLiveResponse,
   StoreDailyIncomeOrderRow,
@@ -87,6 +89,34 @@ const STORE_DAILY_INCOME_ORDERS_LIVE_QUERY = `
   }
 `;
 
+/**
+ * Settled per-staff income for a past day (`reportStaffDailyIncomeList`) — the
+ * snapshot counterpart of the live query, filtered by a bare merchant-calendar
+ * `date` range (same shape as `reportStoreDailyIncomeList`).
+ */
+const STAFF_DAILY_INCOME_LIST_SETTLED_QUERY = `
+  query reportStaffDailyIncome($from: String, $to: String) {
+    reportStaffDailyIncomeList(where: { date: { gte: $from, lte: $to } }, orderBy: [{ date: desc }]) {
+      staffId
+      date
+      numberOfOrders
+      sale
+      refund
+      subtotal
+      supplyFee
+      staffCommission
+      cleanUpFee
+      tip
+      totalIncome
+      staffSalary
+      cardFeeCharge
+      pay1
+      pay2
+      rate
+    }
+  }
+`;
+
 const STAFF_DAILY_INCOME_LIST_LIVE_QUERY = `
   query staffDailyIncomeListLive($reportDate: String!) {
     staffDailyIncomeListLive(reportDate: $reportDate) {
@@ -126,6 +156,15 @@ const STAFF_DAILY_INCOME_ORDERS_LIVE_QUERY = `
     }
   }
 `;
+
+/** Merchant-local calendar date (YYYY-MM-DD) — the settled `date` filter key. */
+const merchantYmd = (d: Date): string =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
 
 const isSameLocalDay = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() &&
@@ -192,6 +231,25 @@ export class ReportService {
       },
     );
     return data.storeDailyIncomeOrdersLive;
+  }
+
+  /**
+   * Settled per-staff income for a past day (`reportStaffDailyIncomeList`).
+   * Use this (not the live query) to cross-check Income Summary's Staff Payout
+   * against per-staff data for an immutable day.
+   */
+  async getStaffDailyIncomeListSettled(
+    date: Date = new Date(),
+  ): Promise<StaffDailyIncomeSettledRow[]> {
+    const day = merchantYmd(date);
+    const data = await this.client.query<StaffDailyIncomeSettledListResponse>(
+      STAFF_DAILY_INCOME_LIST_SETTLED_QUERY,
+      {
+        operationName: 'reportStaffDailyIncome',
+        variables: { from: day, to: day },
+      },
+    );
+    return data.reportStaffDailyIncomeList;
   }
 
   /** Per-staff income for the day (`staffDailyIncomeListLive`). Live-only. */
