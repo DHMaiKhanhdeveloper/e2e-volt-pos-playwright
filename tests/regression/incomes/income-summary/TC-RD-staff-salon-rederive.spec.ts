@@ -28,8 +28,10 @@ const merchantYmd = (d: Date): string =>
     day: '2-digit',
   }).format(d);
 
-const sumStaff = (r: RederivedIncomeSummary, pick: (s: RederivedIncomeSummary['staff'][number]) => number): number =>
-  r.staff.reduce((a, s) => a + pick(s), 0);
+const sumStaff = (
+  r: RederivedIncomeSummary,
+  pick: (s: RederivedIncomeSummary['staff'][number]) => number,
+): number => r.staff.reduce((a, s) => a + pick(s), 0);
 
 test.describe(`Income Summary — Staff Payout & Salon re-derived from DB (Cách 2) ${Tag.REGRESSION}`, () => {
   test('TC-RD1: re-derived Staff Payout & Salon Earnings are internally consistent', async ({
@@ -57,19 +59,24 @@ test.describe(`Income Summary — Staff Payout & Salon re-derived from DB (Cách
         sumStaff(r, (s) => s.supplyShare),
       );
       // Staff Payout = Σ per-staff
-      expect(r.commission, 'Commission = Σ per-staff commission').toBe(sumStaff(r, (s) => s.commission));
+      expect(r.commission, 'Commission = Σ per-staff commission').toBe(
+        sumStaff(r, (s) => s.commission),
+      );
       expect(r.payoutTip, 'Tip = Σ per-staff tip').toBe(sumStaff(r, (s) => s.tip));
       expect(r.cleanUp, 'Clean Up = Σ per-staff clean up').toBe(sumStaff(r, (s) => s.cleanUp));
-      expect(r.cardCharge, 'Card Charge = Σ per-staff card fee').toBe(sumStaff(r, (s) => s.cardFee));
+      expect(r.cardCharge, 'Card Charge = Σ per-staff card fee').toBe(
+        sumStaff(r, (s) => s.cardFee),
+      );
       expect(r.payoutTotal, 'Total Payout = Σ per-staff total').toBe(sumStaff(r, (s) => s.total));
       expect(r.pay1 + r.pay2, 'Pay 1 + Pay 2 = Total Payout').toBe(r.payoutTotal);
       // Salon Earnings
       expect(r.salonCommission, 'Salon Commission = Σ salon comm − Salon Supply Share').toBe(
         sumStaff(r, (s) => s.salonCommission) - r.salonSupplyShare,
       );
-      expect(r.netEarnings, 'Net Earnings = Salon Comm + Product Sale − Product Refund − Discount').toBe(
-        r.salonCommission + r.productSale - r.productRefund - r.totalDiscount,
-      );
+      expect(
+        r.netEarnings,
+        'Net Earnings = Salon Comm + Product Sale − Product Refund − Discount',
+      ).toBe(r.salonCommission + r.productSale - r.productRefund - r.totalDiscount);
       expect(
         r.totalEarning,
         'Total Earning = Net + Staff Supply Share + Clean Up − Salary + Card Charge',

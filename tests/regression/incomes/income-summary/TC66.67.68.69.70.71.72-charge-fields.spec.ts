@@ -74,8 +74,5 @@ test.describe(`Income Summary — charge fields & Salon tax (real data) ${Tag.RE
   // Total Staff Payout / Pay 1 / Total Earning formulas await BA confirmation on
   // the Supply Fee double-count (doc ⚠️#5). The API model has no field for these
   // charges yet, so they can't be data-driven asserted today.
-  test.fixme(
-    'TC-66/67/68 (staff, subtracted) + TC-69/70/71 (salon, added): exact charge values & expanded totals (needs Staff Compensation fixture + ⚠️#5 confirmation + API fields)',
-    () => {},
-  );
+  test.fixme('TC-66/67/68 (staff, subtracted) + TC-69/70/71 (salon, added): exact charge values & expanded totals (needs Staff Compensation fixture + ⚠️#5 confirmation + API fields)', () => {});
 });

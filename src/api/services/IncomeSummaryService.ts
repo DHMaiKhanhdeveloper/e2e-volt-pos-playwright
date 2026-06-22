@@ -118,6 +118,25 @@ const OVERVIEW_LIST_QUERY = `
   }
 `;
 
+// `staffPayoutCardFeeCharge` is the card-fee charge deducted from staff and
+// recouped by the salon (the doc's "Card Charge Commission + Tip", combined into
+// one field; `null` when 0). It is fetched on its own — the full DETAIL_FIELDS
+// settled-list query is already at SQLite's `json_object` argument cap, so adding
+// it there overflows ("too many arguments on function json_object").
+const CARD_FEE_LIVE_QUERY = `
+  query getStaffCardFeeChargeLive($reportDate: String!) {
+    storeDailyIncomeLive(reportDate: $reportDate) { staffPayoutCardFeeCharge }
+  }
+`;
+
+const CARD_FEE_LIST_QUERY = `
+  query getStaffCardFeeCharge($from: String, $to: String) {
+    reportStoreDailyIncomeList(where: { date: { gte: $from, lte: $to } }, orderBy: [{ date: desc }]) {
+      staffPayoutCardFeeCharge
+    }
+  }
+`;
+
 /**
  * Volt POS runs in the merchant timezone (`Asia/Ho_Chi_Minh`, UTC+7, no DST) —
  * see `playwright.config.ts` `use.timezoneId`. The live report keys on a precise
@@ -183,6 +202,34 @@ export class IncomeSummaryService {
       variables: { from: dayKey(date), to: dayKey(date) },
     });
     return data.reportStoreDailyIncomeList[0] ?? null;
+  }
+
+  /**
+   * The card-fee charge deducted from staff and recouped by the salon for a
+   * single day (`staffPayoutCardFeeCharge`, in cents; `0` when absent/null).
+   * Fetched separately from `getDetail` to stay under the settled-list query's
+   * `json_object` argument cap. Used by the Salon Earnings Total reconciliation.
+   */
+  async getStaffCardFeeCharge(date: Date = new Date()): Promise<number> {
+    type Row = { staffPayoutCardFeeCharge: number | null };
+    if (isSameLocalDay(date, new Date())) {
+      const data = await this.client.query<{ storeDailyIncomeLive: Row | null }>(
+        CARD_FEE_LIVE_QUERY,
+        {
+          operationName: 'getStaffCardFeeChargeLive',
+          variables: { reportDate: startOfDayIso(date) },
+        },
+      );
+      return data.storeDailyIncomeLive?.staffPayoutCardFeeCharge ?? 0;
+    }
+    const data = await this.client.query<{ reportStoreDailyIncomeList: Row[] }>(
+      CARD_FEE_LIST_QUERY,
+      {
+        operationName: 'getStaffCardFeeCharge',
+        variables: { from: dayKey(date), to: dayKey(date) },
+      },
+    );
+    return data.reportStoreDailyIncomeList[0]?.staffPayoutCardFeeCharge ?? 0;
   }
 
   /**

@@ -39,11 +39,23 @@ test.describe(`Income Summary — Staff Payout from Staff Income (real data) ${T
       staff.reduce((acc, s) => acc + pick(s), 0);
 
     // Total Service (subtotal) — sale − refund across staff.
-    expect(sum((s) => s.subtotal), 'Σ subtotal == Total Service').toBe(row.staffPayoutTotalService);
+    expect(
+      sum((s) => s.subtotal),
+      'Σ subtotal == Total Service',
+    ).toBe(row.staffPayoutTotalService);
     // Tip / Clean Up Fee / Salary roll up as a straight sum.
-    expect(sum((s) => s.tip), 'Σ tip == Staff Payout Tip').toBe(row.staffPayoutTip);
-    expect(sum((s) => s.cleanUpFee), 'Σ cleanUpFee == Clean Up Fee').toBe(row.staffPayoutCleanUpFee);
-    expect(sum((s) => s.staffSalary), 'Σ staffSalary == Staff Salary').toBe(row.staffPayoutSalary);
+    expect(
+      sum((s) => s.tip),
+      'Σ tip == Staff Payout Tip',
+    ).toBe(row.staffPayoutTip);
+    expect(
+      sum((s) => s.cleanUpFee),
+      'Σ cleanUpFee == Clean Up Fee',
+    ).toBe(row.staffPayoutCleanUpFee);
+    expect(
+      sum((s) => s.staffSalary),
+      'Σ staffSalary == Staff Salary',
+    ).toBe(row.staffPayoutSalary);
   });
 
   // Commission / Pay 1 / Pay 2 / Total / Supply Share are NOT a plain per-staff

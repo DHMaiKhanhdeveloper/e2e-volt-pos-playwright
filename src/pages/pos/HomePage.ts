@@ -66,14 +66,64 @@ export class HomePage extends BasePage {
   }
 
   async selectService(serviceName: string): Promise<void> {
-    // Catalog services are <li> cards in the services grid (implicit
-    // listitem role). Click the matching one.
+    // Filter the catalogue via the "Search service" box first. The default grid
+    // only shows services from the open category, so services that live in a
+    // collapsed category (or below the fold) aren't in the DOM and a direct
+    // click times out. Searching by name surfaces any active service.
+    await this.serviceSearchInput.fill(serviceName);
+    // Catalog services are <li> cards in the services grid (implicit listitem
+    // role). Click the matching one (auto-waits for the filtered list to render).
     const serviceItem = this.page.getByRole('listitem').filter({ hasText: serviceName }).first();
     await serviceItem.click();
+    // Restore the default catalogue view so a later selectProduct() can still
+    // reach the "Product" category heading (a leftover filter would hide it).
+    await this.serviceSearchInput.clear();
     // Adding a service round-trips a GraphQL mutation before the order picks
     // up the line and Pay enables — give that the full action timeout rather
     // than a tight 2s window that flakes on a busy backend.
     await expect(this.payButton).toBeEnabled({ timeout: 10_000 });
+  }
+
+  /**
+   * Add a retail product to the order. Products live under the dedicated
+   * "Product" catalogue category (separate from service categories) and are
+   * filed under the order's "Store" bucket — they are NOT attributed to a
+   * staff member, so they alone do NOT make a tip collectible.
+   *
+   * `exact: true` on the "Product" heading avoids matching "Product 2".
+   */
+  async selectProduct(productName: string): Promise<void> {
+    await this.page.getByRole('heading', { name: 'Product', exact: true }).click();
+    const productItem = this.page.getByRole('listitem').filter({ hasText: productName }).first();
+    await productItem.click();
+    await this.waitForOrderCreated();
+  }
+
+  /**
+   * Open the customer search and type a phone (or name) fragment. The app then
+   * pops a "Customers Found" dialog listing matches — call
+   * {@link selectFirstCustomerResult} to attach the first one.
+   */
+  async enterCustomerPhone(phoneOrName: string): Promise<void> {
+    await this.customerPhoneButton.click();
+    const input = this.page.getByRole('textbox', { name: 'Enter Customer Phone or Name' });
+    await input.waitFor({ state: 'visible' });
+    await input.fill(phoneOrName);
+  }
+
+  /** Attach the first customer from the "Customers Found" results dialog. */
+  async selectFirstCustomerResult(): Promise<void> {
+    // The results popover is role="dialog" containing the "Customers Found"
+    // header. Each result row is a div holding a masked-phone leaf + a name
+    // leaf; the click handler sits on the row, so click the phone's parent.
+    const dialog = this.page.getByRole('dialog').filter({ hasText: 'Customers Found' });
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    const firstRow = dialog
+      .getByText(/^\*\*\*-\*\*\*-\d{4}$/)
+      .first()
+      .locator('..');
+    await firstRow.click();
+    await expect(dialog).toBeHidden({ timeout: 10_000 });
   }
 
   async getOrderTotal(): Promise<string> {
@@ -92,7 +142,11 @@ export class HomePage extends BasePage {
   }
 
   async waitForOrderCreated(): Promise<void> {
-    await expect(this.page.getByText(/Order #OD/)).toBeVisible({ timeout: 10_000 });
+    // The active order panel renders the code as "#OD260616-12063420" in this
+    // build (older builds used the "Order #OD…" prefix). Match the bare
+    // "#OD<date>" form so both are covered. Pending-sidebar cards show the
+    // code WITHOUT the leading "#", so this stays scoped to the active order.
+    await expect(this.page.getByText(/#OD\d{6}/).first()).toBeVisible({ timeout: 10_000 });
   }
 
   async getOrderNumber(): Promise<string> {
@@ -100,7 +154,11 @@ export class HomePage extends BasePage {
     // code (no "Order " prefix, no leading "#") so it matches how the code is
     // rendered everywhere else — Order History rows and the Daily Sale Report
     // table both use the bare `OD\d{6}-\d+` form.
-    const orderText = (await this.page.getByText(/Order #OD/).textContent()) ?? '';
+    const orderText =
+      (await this.page
+        .getByText(/#OD\d{6}/)
+        .first()
+        .textContent()) ?? '';
     return orderText.match(/OD\d{6}-\d+/)?.[0] ?? '';
   }
 }
