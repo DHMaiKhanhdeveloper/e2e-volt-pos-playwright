@@ -6,7 +6,9 @@ import { PaymentSuccessPage } from '@pages/pos/PaymentSuccessPage';
 import { DailySaleReportPage } from '@pages/pos/DailySaleReportPage';
 import { IncomeSummaryPage } from '@pages/pos/IncomeSummaryPage';
 import { OrderHistoryPage } from '@pages/pos/OrderHistoryPage';
+import { TimeTrackingPage } from '@pages/pos/TimeTrackingPage';
 import { EmployeeSettingsPage } from '@pages/settings/EmployeeSettingsPage';
+import { BusinessInfoPage } from '@pages/settings/BusinessInfoPage';
 import { PasscodeDialog } from '@components/modal/PasscodeDialog';
 
 export interface PagesFixture {
@@ -17,7 +19,9 @@ export interface PagesFixture {
   dailySaleReportPage: DailySaleReportPage;
   incomeSummaryPage: IncomeSummaryPage;
   orderHistoryPage: OrderHistoryPage;
+  timeTrackingPage: TimeTrackingPage;
   employeeSettingsPage: EmployeeSettingsPage;
+  businessInfoPage: BusinessInfoPage;
   passcodeDialog: PasscodeDialog;
 }
 
@@ -43,8 +47,14 @@ export const pagesFixture = base.extend<PagesFixture>({
   orderHistoryPage: async ({ page }, use) => {
     await use(new OrderHistoryPage(page));
   },
+  timeTrackingPage: async ({ page }, use) => {
+    await use(new TimeTrackingPage(page));
+  },
   employeeSettingsPage: async ({ page }, use) => {
     await use(new EmployeeSettingsPage(page));
+  },
+  businessInfoPage: async ({ page }, use) => {
+    await use(new BusinessInfoPage(page));
   },
   passcodeDialog: async ({ page }, use) => {
     await use(new PasscodeDialog(page));

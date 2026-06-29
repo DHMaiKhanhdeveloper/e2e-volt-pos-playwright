@@ -1,5 +1,7 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 import { BasePage } from '@pages/BasePage';
+import { shopTimezone } from '@data/static/shops';
+import { zonedDayStartUnix, zonedDayEndUnix } from '@utils/dateUtils';
 
 export type GroupBy = 'Day' | 'Week' | 'Month';
 
@@ -19,23 +21,11 @@ export interface SummaryRow {
   totalPayment: string;
 }
 
-// Volt POS groups days by the MERCHANT timezone (Asia/Ho_Chi_Minh, see
-// playwright.config `use.timezoneId`), not the test runner's machine TZ. Build
-// the URL range on merchant-day boundaries or a window spills onto an extra
-// merchant day (e.g. a 5-day machine-local range renders 6 rows on a US node).
-const MERCHANT_TZ = 'Asia/Ho_Chi_Minh';
-const MERCHANT_OFFSET = '+07:00';
-const merchantYmd = (d: Date): string =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: MERCHANT_TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(d);
-const merchantDayStartUnix = (d: Date): number =>
-  Math.floor(new Date(`${merchantYmd(d)}T00:00:00${MERCHANT_OFFSET}`).getTime() / 1000);
-const merchantDayEndUnix = (d: Date): number =>
-  Math.floor(new Date(`${merchantYmd(d)}T23:59:59${MERCHANT_OFFSET}`).getTime() / 1000);
+// Volt POS groups days by the SHOP's timezone (each merchant keeps its own
+// books), not the test runner's machine TZ. Build the URL range on the shop's
+// day boundaries — driven by `SHOP`/`TZ_ID` via `shopTimezone` — so a window
+// never spills onto an extra day when the machine TZ differs from the shop's.
+const SHOP_TZ = shopTimezone(process.env.SHOP);
 
 /**
  * Income Summary — `/incomes/income-summary`
@@ -88,8 +78,8 @@ export class IncomeSummaryPage extends BasePage {
    * unlocks the passcode afterwards.
    */
   async gotoRange(from: Date, to: Date, groupBy: GroupBy = 'Day'): Promise<void> {
-    const f = merchantDayStartUnix(from);
-    const t = merchantDayEndUnix(to);
+    const f = zonedDayStartUnix(from, SHOP_TZ);
+    const t = zonedDayEndUnix(to, SHOP_TZ);
     this.logger.info(`Navigate to ${this.path} range ${f}-${t} groupBy=${groupBy}`);
     await this.page.goto(`${this.path}?from=${f}&to=${t}&groupBy=${groupBy.toLowerCase()}`, {
       waitUntil: 'domcontentloaded',
@@ -244,5 +234,81 @@ export class IncomeSummaryPage extends BasePage {
   /** Staff Payout "Show more"/"Show less" toggle. */
   showMoreToggle(): Locator {
     return this.page.getByText(/^Show (more|less)$/);
+  }
+
+  /**
+   * Expand every "Show more" section, then scrape the detail panel into ordered
+   * sections (Payment Details / Sale Details / Supply Fee / Staff Payout / Salon
+   * Earnings). Each row keeps the app's bold flag (font-weight ≥ 600 marks the
+   * category rows; sub-rows are lighter). The caller must have the detail panel
+   * open (see {@link openPeriodDetail}).
+   */
+  async readDetailSections(): Promise<
+    Array<{ title: string; rows: Array<{ label: string; value: string; bold: boolean }> }>
+  > {
+    const flat = await this.page.evaluate(() => {
+      const SECTIONS = [
+        'Payment Details',
+        'Sale Details',
+        'Supply Fee',
+        'Staff Payout',
+        'Salon Earnings',
+      ];
+      document.querySelectorAll('button, [role="button"], span, div').forEach((el) => {
+        if ((el.textContent || '').trim() === 'Show more') (el as HTMLElement).click();
+      });
+      const panel =
+        Array.from(document.querySelectorAll('div')).find(
+          (d) =>
+            /Payment Details/.test(d.textContent || '') &&
+            /Salon Earnings/.test(d.textContent || '') &&
+            d.querySelectorAll('*').length < 600,
+        ) ?? document.body;
+
+      const out: Array<{
+        kind: 'section' | 'row';
+        title?: string;
+        label?: string;
+        value?: string;
+        bold?: boolean;
+      }> = [];
+      const seen = new Set<Element>();
+      for (const el of Array.from(panel.querySelectorAll('*'))) {
+        const txt = (el.textContent || '').trim();
+        if (el.childElementCount === 0 && SECTIONS.includes(txt)) {
+          out.push({ kind: 'section', title: txt });
+          continue;
+        }
+        if (/justify-between/.test((el as HTMLElement).className || '')) {
+          const kids = el.children;
+          if (kids.length < 2) continue;
+          const value = (kids[kids.length - 1].textContent || '').trim();
+          if (!/^-?\$/.test(value)) continue;
+          if (el.querySelector('[class*="justify-between"]')) continue;
+          if (seen.has(el)) continue;
+          seen.add(el);
+          const label = (kids[0].textContent || '').replace(/\s+/g, ' ').trim();
+          if (!label || /\$/.test(label)) continue;
+          const bold = parseInt(getComputedStyle(kids[0] as HTMLElement).fontWeight, 10) >= 600;
+          out.push({ kind: 'row', label, value, bold });
+        }
+      }
+      return out;
+    });
+
+    const sections: Array<{
+      title: string;
+      rows: Array<{ label: string; value: string; bold: boolean }>;
+    }> = [];
+    for (const item of flat) {
+      if (item.kind === 'section') sections.push({ title: item.title as string, rows: [] });
+      else if (sections.length)
+        sections[sections.length - 1].rows.push({
+          label: item.label as string,
+          value: item.value as string,
+          bold: !!item.bold,
+        });
+    }
+    return sections;
   }
 }

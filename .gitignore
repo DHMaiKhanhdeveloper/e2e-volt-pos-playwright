@@ -15,8 +15,8 @@ playwright/.cache/
 .last-run.json
 .playwright-mcp/
 
-# Reports
-reports/
+# Reports (root output folder only — NOT src/reports source code)
+/reports/
 allure-results/
 allure-report/
 

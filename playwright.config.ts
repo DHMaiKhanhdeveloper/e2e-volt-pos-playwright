@@ -1,7 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import { loadEnv } from './configs/env/loadEnv';
+import { shopTimezone } from './src/data/static/shops';
 
 const env = loadEnv();
+
+// Browser timezone = the active shop's zone (each merchant keeps its own books in
+// its local time). Driven by `SHOP` / `TZ_ID` so date math + the app's "Today"
+// agree. Defaults to the shop map / Asia/Ho_Chi_Minh.
+const timezoneId = shopTimezone(process.env.SHOP);
 
 const isCI = !!process.env.CI;
 
@@ -49,7 +55,7 @@ export default defineConfig({
     screenshot: 'on',
     video: (process.env.VIDEO ?? 'on') as 'on' | 'retain-on-failure' | 'off',
     locale: 'en-US',
-    timezoneId: 'Asia/Ho_Chi_Minh',
+    timezoneId,
     launchOptions: {
       slowMo: env.SLOW_MO,
     },

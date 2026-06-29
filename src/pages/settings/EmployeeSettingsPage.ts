@@ -1,5 +1,9 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 import { BasePage } from '@pages/BasePage';
+import { parseCentsFromUsd } from '@utils/moneyUtils';
+
+/** Salary-setting radio values in the Compensation form. */
+export type SalarySetting = 'salary_by_period' | 'wage_per_day' | 'wage_per_hour';
 
 /** A staff member's Compensation tab values, as shown in Settings → Employees. */
 export interface StaffCompensation {
@@ -21,6 +25,14 @@ export interface StaffCompensation {
   cardFeeOnCommissionPct: number | null;
   /** Card Fee Charge — on credit-card tip (%). */
   cardFeeOnTipPct: number | null;
+  /** Salary mode (`salary_by_period`/`wage_per_day`/`wage_per_hour`), or null. */
+  salarySetting: SalarySetting | null;
+  /** Salary amount in cents ($/period, $/day or $/hour per `salarySetting`). */
+  salaryAmountCents: number | null;
+  /** Deduction Per Day (cents) — the daily clean-up fee. */
+  deductionPerDayCents: number | null;
+  /** "Exclude Tips From Cash/Check Income" switch (= `enable_payroll_tip`). */
+  enablePayrollTip: boolean;
 }
 
 /**
@@ -111,8 +123,20 @@ export class EmployeeSettingsPage extends BasePage {
    * are absent for salary-only staff.
    */
   async openCompensationTab(): Promise<void> {
-    await this.compensationTab.first().click();
-    await expect(this.page.getByText('Deduction Per Day').first()).toBeVisible({ timeout: 10_000 });
+    // The tab click is occasionally swallowed while the staff detail is still
+    // settling (it stays on Information). Re-click until the Compensation form
+    // mounts — "Deduction Per Day" is present for every compensation type.
+    const ready = this.page.getByText('Deduction Per Day').first();
+    for (let i = 0; i < 6; i++) {
+      await this.compensationTab
+        .first()
+        .click({ timeout: 5_000 })
+        .catch(() => {});
+      if (await ready.isVisible().catch(() => false)) return;
+      await this.page.waitForTimeout(600);
+      if (await ready.isVisible().catch(() => false)) return;
+    }
+    await expect(ready).toBeVisible({ timeout: 5_000 });
   }
 
   private async pct(name: string): Promise<number | null> {
@@ -120,6 +144,43 @@ export class EmployeeSettingsPage extends BasePage {
     if ((await loc.count()) === 0) return null;
     const raw = (await loc.first().inputValue()).replace(/[^0-9.-]/g, '');
     return raw === '' ? null : Number(raw);
+  }
+
+  /** Read a currency input (e.g. "$25.00") by name, as integer cents. */
+  private async money(name: string): Promise<number | null> {
+    const loc = this.page.locator(`input[name="${name}"]`);
+    if ((await loc.count()) === 0) return null;
+    const raw = await loc.first().inputValue();
+    return raw.trim() === '' ? null : parseCentsFromUsd(raw);
+  }
+
+  /**
+   * The selected salary-mode radio value, or null when the staff has no salary
+   * section (pure-commission). Only the three salary-setting radios carry these
+   * values, so a value match avoids picking up the compensation-type accordion.
+   */
+  private async readSalarySetting(): Promise<SalarySetting | null> {
+    return this.page.evaluate(() => {
+      const VALUES = ['salary_by_period', 'wage_per_day', 'wage_per_hour'];
+      const el = Array.from(document.querySelectorAll('[role="radio"]')).find((r) => {
+        const v = r.getAttribute('value');
+        return (
+          !!v &&
+          VALUES.includes(v) &&
+          (r.getAttribute('aria-checked') === 'true' || r.getAttribute('data-state') === 'checked')
+        );
+      });
+      return (
+        (el?.getAttribute('value') as 'salary_by_period' | 'wage_per_day' | 'wage_per_hour') ?? null
+      );
+    });
+  }
+
+  /** "Exclude Tips From Cash/Check Income" switch state (false when absent). */
+  private async readExcludeTips(): Promise<boolean> {
+    const sw = this.page.getByRole('switch', { name: /Exclude Tips From Cash\/Check Income/i });
+    if ((await sw.count()) === 0) return false;
+    return (await sw.first().getAttribute('aria-checked')) === 'true';
   }
 
   /**
@@ -153,6 +214,10 @@ export class EmployeeSettingsPage extends BasePage {
       pay1Pay2Split: await this.pct('cashCheckSplit'),
       cardFeeOnCommissionPct: await this.pct('percentStaffCommission'),
       cardFeeOnTipPct: await this.pct('percentCreditCardTip'),
+      salarySetting: await this.readSalarySetting(),
+      salaryAmountCents: await this.money('salaryAmount'),
+      deductionPerDayCents: await this.money('deductionPerDay'),
+      enablePayrollTip: await this.readExcludeTips(),
     };
   }
 
@@ -171,6 +236,10 @@ export class EmployeeSettingsPage extends BasePage {
         pay1Pay2Split: null,
         cardFeeOnCommissionPct: null,
         cardFeeOnTipPct: null,
+        salarySetting: null,
+        salaryAmountCents: null,
+        deductionPerDayCents: null,
+        enablePayrollTip: false,
       };
     }
     const staffId = this.currentStaffId();

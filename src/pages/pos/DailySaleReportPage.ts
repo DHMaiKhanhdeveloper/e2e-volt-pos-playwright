@@ -1,6 +1,8 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 import { BasePage } from '@pages/BasePage';
 import { parseCentsFromUsd } from '@utils/moneyUtils';
+import { shopTimezone } from '@data/static/shops';
+import { zonedDayStartUnix, zonedDayEndUnix } from '@utils/dateUtils';
 import type { OrderMoneyRow } from '@utils/incomeFromOrders';
 import type { OrderDetail } from '@utils/orderDetail';
 
@@ -346,12 +348,11 @@ export class DailySaleReportPage extends BasePage {
    *   - the route is single-source-of-truth — same effect.
    */
   async gotoDate(date: Date, activeChart: ChartKey = 'sale'): Promise<void> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-    const from = Math.floor(startOfDay.getTime() / 1000);
-    const to = Math.floor(endOfDay.getTime() / 1000);
+    // Day boundaries in the SHOP's timezone (not the machine's) so the window is
+    // correct regardless of where the test runs.
+    const tz = shopTimezone(process.env.SHOP);
+    const from = zonedDayStartUnix(date, tz);
+    const to = zonedDayEndUnix(date, tz);
     await this.page.goto(`${this.path}?from=${from}&to=${to}&activeChart=${activeChart}`);
   }
 
