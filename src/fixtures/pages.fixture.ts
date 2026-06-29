@@ -1,5 +1,6 @@
 import { test as base } from '@playwright/test';
 import { HomePage } from '@pages/pos/HomePage';
+import { OrderPendingPage } from '@pages/pos/OrderPendingPage';
 import { CheckoutPage } from '@pages/pos/CheckoutPage';
 import { OtherPaymentPage } from '@pages/pos/OtherPaymentPage';
 import { PaymentSuccessPage } from '@pages/pos/PaymentSuccessPage';
@@ -13,6 +14,7 @@ import { PasscodeDialog } from '@components/modal/PasscodeDialog';
 
 export interface PagesFixture {
   homePage: HomePage;
+  orderPendingPage: OrderPendingPage;
   checkoutPage: CheckoutPage;
   otherPaymentPage: OtherPaymentPage;
   paymentSuccessPage: PaymentSuccessPage;
@@ -28,6 +30,9 @@ export interface PagesFixture {
 export const pagesFixture = base.extend<PagesFixture>({
   homePage: async ({ page }, use) => {
     await use(new HomePage(page));
+  },
+  orderPendingPage: async ({ page }, use) => {
+    await use(new OrderPendingPage(page));
   },
   checkoutPage: async ({ page }, use) => {
     await use(new CheckoutPage(page));

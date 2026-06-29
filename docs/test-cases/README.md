@@ -24,6 +24,8 @@ Nơi lưu trữ các file test case (Markdown) đã được QA review và đố
 
 ## File hiện có
 
-| File | Ticket | Trang | Số TC |
-|---|---|---|---|
-| [VP-1048-daily-sale-report-test-cases.md](./VP-1048-daily-sale-report-test-cases.md) | VP-1048 | Daily Sale Report | 44 |
+| File                                                                                 | Ticket  | Trang                        | Số TC |
+| ------------------------------------------------------------------------------------ | ------- | ---------------------------- | ----- |
+| [VP-1048-daily-sale-report-test-cases.md](./VP-1048-daily-sale-report-test-cases.md) | VP-1048 | Daily Sale Report            | 44    |
+| [VP-1048-income-summary.md](./VP-1048-income-summary.md)                             | VP-1048 | Income Summary               | 73    |
+| [VP-1402-staff-income.md](./VP-1402-staff-income.md)                                 | VP-1402 | Staff Income & Staff Payroll | 80    |

@@ -92,9 +92,10 @@ test.describe(`Income Summary — Salon Earnings (real data) ${Tag.REGRESSION}`,
       'Staff Supply Share + Salon Supply Share == Total Supply Fee',
     ).toBe(row.supplyFeeTotal);
     // The staff supply share is the same number both sections reference.
-    expect(row.salonEarningsStaffSupplyShare, 'Salon-side Staff Supply Share == Supply Fee staff share').toBe(
-      row.supplyFeeStaffShare,
-    );
+    expect(
+      row.salonEarningsStaffSupplyShare,
+      'Salon-side Staff Supply Share == Supply Fee staff share',
+    ).toBe(row.supplyFeeStaffShare);
   });
 
   // The expanded Total Earning reconciliation (incl. Discount Charge + Card
