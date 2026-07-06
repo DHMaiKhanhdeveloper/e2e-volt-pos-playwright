@@ -17,6 +17,25 @@ import {
   type RouteScan,
 } from '@utils/i18nScan';
 import { POPUP_DEFS, scanPopup } from '@utils/i18nPopups';
+import { HOME_POPUP_DEFS, scanHomeOrderDialogs } from '@utils/i18nHome';
+import {
+  ORDER_HISTORY_POPUP_DEFS,
+  scanOrderHistoryFilter,
+  scanOrderHistoryDatePicker,
+  scanOrderHistoryDetail,
+} from '@utils/i18nOrderHistory';
+import {
+  ORDER_PENDING_POPUP_DEFS,
+  scanOrderPendingFilter,
+  scanOrderPendingDatePicker,
+  scanOrderPendingCardOpen,
+} from '@utils/i18nOrderPending';
+import {
+  INCOMES_POPUP_DEFS,
+  scanIncomesGate,
+  scanIncomesDatePicker,
+  scanIncomesDetail,
+} from '@utils/i18nIncomes';
 
 /**
  * VP-462 — Vietnamese localization scan.
@@ -34,7 +53,9 @@ import { POPUP_DEFS, scanPopup } from '@utils/i18nPopups';
  */
 test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
   test('TC-I18N-VI-SCAN: list screens not yet translated to Vietnamese', async ({ page }) => {
-    test.setTimeout(300_000);
+    // 10 min: the full walk now includes deep scans for Home, Order History,
+    // Order Pending and the 3 Income reports — well past the old 5-min budget.
+    test.setTimeout(600_000);
 
     const outDir = path.resolve('reports', 'i18n-audit');
     // Dedicated dir so auto-generated shots don't mix with the manual audit's screens/.
@@ -75,6 +96,12 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
     expect(hasRouter, 'TanStack router (__TSR_ROUTER__) must be available for SPA navigation').toBe(
       true,
     );
+
+    // 1b) Scan the Incomes passcode gate dialog BEFORE it's unlocked (the static
+    //     route scan below enters the passcode but never scans the dialog text),
+    //     then unlock so the gated income routes scan cleanly. No-op if already
+    //     unlocked.
+    await scanIncomesGate(page, record);
 
     // 2) Scan every static route.
     for (const def of STATIC_ROUTES) {
@@ -256,7 +283,13 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
     //     dialog portal for English, then close it. A popup that can't be opened
     //     in this session is recorded as "không mở được" and never fails the run
     //     (openable-only scope). The dialog is screenshotted while still open.
-    for (const def of POPUP_DEFS) {
+    for (const def of [
+      ...POPUP_DEFS,
+      ...HOME_POPUP_DEFS,
+      ...ORDER_HISTORY_POPUP_DEFS,
+      ...ORDER_PENDING_POPUP_DEFS,
+      ...INCOMES_POPUP_DEFS,
+    ]) {
       const slug = slugify(`${def.host}-${def.name}`);
       const scan = await scanPopup(page, def, {
         onOpen: async (p) => {
@@ -375,6 +408,33 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
     } catch {
       /* no staff to open — skip */
     }
+
+    // 4e-oh) Order History deep dialogs — the "Bộ lọc" dialog + its four
+    //        sub-dropdowns, the react-day-picker calendar grid (still English),
+    //        and the order-detail panel with its Receipt + Refund dialogs.
+    //        Best-effort: missing orders / unopenable dialogs never fail the scan.
+    await scanOrderHistoryFilter(page, record);
+    await scanOrderHistoryDatePicker(page, record);
+    await scanOrderHistoryDetail(page, record);
+
+    // 4e-op) Order Pending deep surfaces — inline filter controls (Staff popover
+    //        / Sort / DatePicker preset), the calendar grid (still English), and
+    //        the guard dialog a card-open can raise. Best-effort.
+    await scanOrderPendingFilter(page, record);
+    await scanOrderPendingDatePicker(page, record);
+    await scanOrderPendingCardOpen(page, record);
+
+    // 4e-inc) Incomes deep surfaces — the DatePicker calendar grid (still
+    //         English) + the per-route detail panel (Print, Order Details dialog)
+    //         on Income Summary & Staff Income. Passcode already entered above.
+    await scanIncomesDatePicker(page, record);
+    await scanIncomesDetail(page, record);
+
+    // 4f) Home order-flow dialogs — set up one order (first staff + service),
+    //     then open/scan Order Note, Promo & Rewards… Best-effort: missing
+    //     staff/service never fails the scan. Placed last because it mutates the
+    //     active order (leaves a staff+service line on /home).
+    await scanHomeOrderDialogs(page, record);
 
     // 5) Diff vs the previous run, then write the report (HTML + JSON).
     const generatedAt = new Date().toISOString();

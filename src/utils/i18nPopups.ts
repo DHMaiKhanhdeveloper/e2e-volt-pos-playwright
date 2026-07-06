@@ -99,18 +99,23 @@ async function dialogVisible(page: Page, timeout = 2500): Promise<boolean> {
     .catch(() => false);
 }
 
-/** Dismiss any open dialog (Escape, a few times) so the next popup is clean. */
+/**
+ * Dismiss any open dialog so the next popup starts clean. Prefers the dialog's
+ * explicit close (X) button, then falls back to Escape and an outside click:
+ * the QR-scanner / camera dialog keeps the camera live and ignores Escape, so
+ * it only closes via its X button — leaving it open would block later steps.
+ */
 async function closeDialog(page: Page): Promise<void> {
-  for (let i = 0; i < 3; i++) {
-    if (
-      !(await page
-        .locator(DIALOG_SELECTOR)
-        .first()
-        .isVisible()
-        .catch(() => false))
-    )
-      return;
-    await page.keyboard.press('Escape').catch(() => {});
+  for (let i = 0; i < 4; i++) {
+    const dialog = page.locator(DIALOG_SELECTOR).last();
+    if (!(await dialog.isVisible().catch(() => false))) return;
+    // The close control's accessible name is "Close" (hardcoded EN) or "Đóng".
+    const closeBtn = dialog.getByRole('button', { name: /close|đóng/i }).first();
+    if (await closeBtn.isVisible().catch(() => false)) {
+      await closeBtn.click({ timeout: 1500, force: true }).catch(() => {});
+    } else {
+      await page.keyboard.press('Escape').catch(() => {});
+    }
     await page.waitForTimeout(250);
   }
   // Last resort: click outside (top-left corner) to dismiss a modal overlay.
