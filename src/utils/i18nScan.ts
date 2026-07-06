@@ -62,6 +62,13 @@ export interface RawDetect {
    * text-labelled controls also appear in `ui`, icon-only ones only here.
    */
   controls?: string[];
+  /**
+   * Icon-only controls with NO accessible name (no text/aria-label/title).
+   * Untranslatable AND an a11y gap — the scan can't verify their wording and a
+   * screen reader can't announce them. Reported by dev source (data-tsd-source)
+   * so a label can be added. Report-only; never trips the localization gate.
+   */
+  noName?: string[];
   /** Text visibly clipped by its container (ellipsis / hidden overflow). */
   overflow: string[];
   /** Horizontal overflow of the scan root in px (>8 ≈ layout vỡ). 0 if none. */
@@ -304,6 +311,7 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'status',
     'active',
     'inactive',
+    'unknown',
     'enable',
     'disable',
     'week',
@@ -391,6 +399,11 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'sync',
     'retry',
     'please',
+    'printer',
+    'connect',
+    'connected',
+    'connection',
+    'disconnected',
     'drawer',
     'batch',
     'split',
@@ -400,6 +413,8 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'equally',
     'dialog',
     'equal',
+    'points', // loyalty term — leaks as "Current points:" on the order receipt
+    'visit', // "Total visit:" on the order receipt
   ]);
   // Exact-string false positives to never flag.
   const fpExact = new Set(['In', 'English']);
@@ -411,18 +426,22 @@ export function detectScope(opts: DetectOpts): RawDetect {
   // leaked i18n keys ("global.permissionLabels.*") are deliberately NOT data.
   const looksLikeData = (t: string, dictCount: number, tokens: string[]): boolean => {
     if (dataVal.has(t)) return true;
-    if (/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(t)) return true; // date → appointment/log
+    // A sentence — ends with .?! or contains sentence words — is UI copy, even
+    // with an interpolated name/date (e.g. a notification "X appointment on
+    // 07/03/2026 has been confirmed"). It MUST be translated, so it is NOT data.
+    const isSentence =
+      /[.?!]/.test(t) ||
+      /\b(you|your|this|that|these|those|we|our|please|want|sure|cannot|will|do|does|are|is|has|have|been)\b/i.test(
+        t,
+      );
+    // A bare date marks appointment/log DATA — but only when it is NOT a sentence.
+    if (/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(t) && !isSentence) return true;
     if (/^\d[\d.,]*\s+\S/.test(t)) return true; // "3 Services", "1 Product"
     if (/\(.*\$\S*\d.*\)/.test(t)) return true; // "(Received $0.01 - Change $0.00)"
     const letters = t.replace(/[^A-Za-z]/g, '');
     if (letters.length >= 4 && letters === letters.toUpperCase() && /\s/.test(t.trim())) {
       return true; // ALL-CAPS multiword catalog name ("KID SERVICES")
     }
-    const isSentence =
-      /[.?!]/.test(t) ||
-      /\b(you|your|this|that|these|those|we|our|please|want|sure|cannot|will|do|does|are|is)\b/i.test(
-        t,
-      );
     if (tokens.length >= 3 && dictCount <= 1 && !isSentence) return true; // proper/catalog name
     return false;
   };
@@ -496,6 +515,45 @@ export function detectScope(opts: DetectOpts): RawDetect {
       if (isEnglish(name)) controls.push(name);
     });
 
+  // Icon-only controls with NO accessible name (no text/aria-label/title) — the
+  // header status icons, the print button, etc. Nothing to translate, but the
+  // scan can't verify them and a screen reader can't read them. Report each by
+  // its nearest dev source (data-tsd-source: "file:line") so a label is easy to
+  // add; dedup by source so shared components collapse to one entry.
+  const noName: string[] = [];
+  const nnSeen = new Set<string>();
+  root
+    .querySelectorAll('button,[role="button"],[role="menuitem"],[role="tab"]')
+    .forEach((e) => {
+      if (inDataZone(e)) return;
+      const r = e.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) return;
+      const st = getComputedStyle(e as HTMLElement);
+      if (st.display === 'none' || st.visibility === 'hidden') return;
+      const name = (
+        (e.textContent || '').trim() ||
+        e.getAttribute('aria-label') ||
+        e.getAttribute('title') ||
+        ''
+      ).trim();
+      if (name) return; // has a name → handled by the `controls`/`aria` checks
+      if (!e.querySelector('svg,img')) return; // only icon buttons are in scope
+      let src: string | null = null;
+      let n: Element | null = e;
+      for (let i = 0; i < 6 && n; i++) {
+        const s = n.getAttribute('data-tsd-source');
+        if (s) {
+          src = s;
+          break;
+        }
+        n = n.parentElement;
+      }
+      const label = src || 'icon (không rõ nguồn)';
+      if (nnSeen.has(label)) return;
+      nnSeen.add(label);
+      noName.push(label);
+    });
+
   // UI vỡ #1 — text visibly clipped by its container (ellipsis / hidden).
   const overflow: string[] = [];
   root.querySelectorAll('button,a,span,div,p,h1,h2,h3,h4,label,th,td').forEach((e) => {
@@ -519,6 +577,7 @@ export function detectScope(opts: DetectOpts): RawDetect {
     ui: uiHits,
     aria: ariaHits,
     controls,
+    noName,
     overflow: overflow.slice(0, 25),
     xOverflow: xOverflow > 8 ? xOverflow : 0,
     stub,
@@ -540,6 +599,22 @@ export async function detectBody(page: Page): Promise<RawDetect> {
 export async function detectDialog(page: Page): Promise<RawDetect> {
   return page.evaluate(detectScope, {
     rootSelector: DIALOG_SELECTOR,
+    dataZones: DATA_ZONE_SELECTORS,
+    dataValues: DATA_VALUES,
+  });
+}
+
+/**
+ * Scan any visible toast / snackbar for leftover English. Toasts are transient
+ * (they fade after a few seconds) and render OUTSIDE the dialog portal — in the
+ * sonner toaster or the notifications region — so they need their own scan root.
+ * Call right after the action that fires the toast (e.g. clicking Print with no
+ * printer → "Printer not connected").
+ */
+export async function detectToasts(page: Page): Promise<RawDetect> {
+  return page.evaluate(detectScope, {
+    rootSelector:
+      '[data-sonner-toaster],[role="region"][aria-label*="otification"],[data-sonner-toast]',
     dataZones: DATA_ZONE_SELECTORS,
     dataValues: DATA_VALUES,
   });
@@ -654,6 +729,8 @@ export function renderI18nReport(
   // Interactive controls still in English (buttons, tabs, switches, icon
   // buttons via aria/title) — deduped across every screen and popup.
   const controlsDedup = dedupUntranslated(scans, (s) => s.controls ?? []);
+  // Icon-only buttons with no accessible name, deduped by dev source location.
+  const noNameDedup = dedupUntranslated(scans, (s) => s.noName ?? []);
   // "UI vỡ" (report-only): any scan whose content is clipped or overflows
   // horizontally. Sorted worst-first. Popups included (labelled by route).
   const broken = scans
@@ -741,6 +818,23 @@ export function renderI18nReport(
             .join('<br>')}</td></tr>`,
       )
       .join('') || '<tr><td colspan="3" class="ok">🎉 Không còn nút nào tiếng Anh!</td></tr>'
+  }</tbody></table>`;
+
+  // 🔇 Icon-only buttons with NO accessible name (header status icons, print
+  // button…). No text to translate, but a11y-broken and unverifiable — devs
+  // should add a translated aria-label. Report-only, grouped by source file.
+  const noNameBlock = `<h2>🔇 Nút icon thiếu nhãn — a11y, scan không kiểm được (${noNameDedup.length}) <span class="b b-skip">chỉ báo cáo</span></h2>
+  <div class="meta" style="margin-top:-4px">Nút chỉ có icon, KHÔNG có text/aria-label/title → không có chữ để dịch NHƯNG screen reader không đọc được và scan không kiểm được nội dung. Nên thêm <code>aria-label</code> (đã dịch). Liệt kê theo file nguồn (data-tsd-source).</div>
+  <table><thead><tr><th>Nguồn (file:line)</th><th class="num">#Nơi</th><th>Xuất hiện ở</th></tr></thead>
+  <tbody>${
+    noNameDedup
+      .map(
+        (d) =>
+          `<tr><td class="str">${esc(d.text)}</td><td class="num">${d.count}</td><td class="route">${d.routes
+            .map(esc)
+            .join('<br>')}</td></tr>`,
+      )
+      .join('') || '<tr><td colspan="3" class="ok">🎉 Mọi nút icon đều có nhãn!</td></tr>'
   }</tbody></table>`;
 
   // 📐 UI vỡ (report-only): clipped text + horizontal overflow, worst-first.
@@ -846,6 +940,7 @@ export function renderI18nReport(
     }
     <div class="sc"><div class="lbl">Chuỗi cần dịch (dedup)</div><div class="val amber">${dedup.length}</div></div>
     <div class="sc"><div class="lbl">Nút còn tiếng Anh</div><div class="val red">${controlsDedup.length}</div></div>
+    <div class="sc"><div class="lbl">Nút icon thiếu nhãn</div><div class="val amber">${noNameDedup.length}</div></div>
     <div class="sc"><div class="lbl">UI vỡ (báo cáo)</div><div class="val amber">${broken.length}</div></div>
     <div class="sc"><div class="lbl">Dịch sạch</div><div class="val green">${clean.length + popupClean.length}</div></div>
   </div>
@@ -875,6 +970,8 @@ export function renderI18nReport(
   ${popupBlock}
 
   ${controlsBlock}
+
+  ${noNameBlock}
 
   ${brokenBlock}
   <p class="meta">Ảnh chỉ chụp cho trang/popup FAIL (mục sạch không chụp). "In"=Print và "English"=tên ngôn ngữ đã loại khỏi danh sách lỗi. Từ điển UI chủ đích bỏ stop-word để không gắn cờ nhầm tên dịch vụ/khách hàng. aria-label liệt kê tham khảo, không tính vào "chưa dịch". Popup không mở được chỉ xuất hiện theo sự kiện thiết bị/lỗi — không tính là "chưa dịch".</p>
