@@ -16,6 +16,7 @@
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
     "typecheck": "tsc --noEmit",
+    "reports:index": "node scripts/build-reports-index.mjs",
     "pretest": "node scripts/check-server.mjs",
     "test": "cross-env ENV=local playwright test",
     "test:local": "cross-env ENV=local playwright test",

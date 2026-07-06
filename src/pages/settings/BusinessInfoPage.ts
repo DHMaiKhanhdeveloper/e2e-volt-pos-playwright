@@ -18,11 +18,42 @@ export class BusinessInfoPage extends BasePage {
 
   readonly heading: Locator;
   readonly payPeriodGroup: Locator;
+  readonly editButton: Locator;
 
   constructor(page: Page) {
     super(page);
     this.heading = page.getByRole('heading', { name: 'Business Info' });
     this.payPeriodGroup = page.locator('[role="radiogroup"]');
+    this.editButton = page.getByRole('button', { name: 'Edit', exact: true });
+  }
+
+  /** A section heading text ("Information", "Work Hours", "Pay Period",
+   *  "Store Brand", "Store Policies"). */
+  section(name: string): Locator {
+    return this.page.getByText(name, { exact: true });
+  }
+
+  /** A named form field (textbox), e.g. "Business Name", "Website", "City". */
+  field(name: string): Locator {
+    return this.page.getByRole('textbox', { name, exact: true });
+  }
+
+  /** The Work-Hours open/close switch for a weekday, e.g. "monday". */
+  daySwitch(day: string): Locator {
+    return this.page.getByRole('switch', { name: `Open on ${day}` });
+  }
+
+  /** A policy textbox: "Liability Policies" / "Cancellation Policies" / "Other Policies". */
+  policy(name: string): Locator {
+    return this.page.getByRole('textbox', { name, exact: true });
+  }
+
+  /** True when a named field is editable (not `disabled`). */
+  async isFieldEditable(name: string): Promise<boolean> {
+    return this.field(name)
+      .first()
+      .isEditable()
+      .catch(() => false);
   }
 
   async goto(): Promise<void> {

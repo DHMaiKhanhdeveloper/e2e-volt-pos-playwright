@@ -7,6 +7,7 @@ import {
   detectScope,
   enterPasscodeIfPrompted,
   routerNavigate,
+  scrollThroughPage,
   type RouteScan,
 } from '@utils/i18nScan';
 import { type PopupDef } from '@utils/i18nPopups';
@@ -197,6 +198,43 @@ export async function scanIncomesDatePicker(
   }
 }
 
+/**
+ * Expand every collapsed section inside the detail panel so nested labels mount
+ * before the scan. The Income Summary detail panel keeps blocks like "Tổng chi
+ * trả nhân viên" (Staff Payout) collapsed — the untranslated "Pay 1"/"Pay 2"
+ * rows (VP-2253) only render once it's opened. Clicks `aria-expanded="false"`
+ * toggles + any "Show more / Xem thêm" button, a few passes for nested groups.
+ * Best-effort — never throws.
+ */
+async function expandPanelSections(page: Page): Promise<void> {
+  for (let pass = 0; pass < 3; pass++) {
+    const clicked = await page.evaluate(() => {
+      const main = document.querySelector('main') || document.body;
+      let n = 0;
+      // Collapsed disclosure toggles.
+      main.querySelectorAll('[aria-expanded="false"]').forEach((e) => {
+        const el = e as HTMLElement;
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          el.click();
+          n++;
+        }
+      });
+      // "Show more / Xem thêm / Hiện thêm" buttons.
+      [...main.querySelectorAll('button,[role="button"]')].forEach((e) => {
+        const t = (e.textContent || '').replace(/\s+/g, ' ').trim();
+        if (/show more|xem thêm|hiện thêm|xem tất cả/i.test(t)) {
+          (e as HTMLElement).click();
+          n++;
+        }
+      });
+      return n;
+    });
+    if (!clicked) break;
+    await page.waitForTimeout(500);
+  }
+}
+
 /** The report routes whose first data row opens an in-place detail panel. */
 const DETAIL_ROUTES: { path: string; name: string }[] = [
   { path: '/incomes/income-summary', name: 'Tổng hợp thu nhập' },
@@ -225,6 +263,10 @@ export async function scanIncomesDetail(
       if (!(await row.isVisible().catch(() => false))) continue; // no data → skip
       await row.click().catch(() => {});
       await page.waitForTimeout(1500);
+      // Open collapsed blocks (e.g. Staff Payout → "Pay 1"/"Pay 2") first, then
+      // scroll the tall panel (5 blocks) so every label mounts before the scan.
+      await expandPanelSections(page);
+      await scrollThroughPage(page);
 
       // 1) The detail panel body (Print button, detail headings, "No detail to
       //    show" when empty). Scan `main`; list rows are outside the data zone

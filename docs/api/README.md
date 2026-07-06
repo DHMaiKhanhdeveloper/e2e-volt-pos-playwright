@@ -13,6 +13,12 @@ These are the operations the e2e suite reconciles the UI against (see
 | [daily-sale-report-api.md](daily-sale-report-api.md) | Daily Sale Report | `/incomes/income-daily`   |
 | [income-summary-api.md](income-summary-api.md)       | Income Summary    | `/incomes/income-summary` |
 
+## Công thức field (tất cả report)
+
+Bảng công thức cho **từng field** của Daily Sale Report + Income Summary + Staff
+Income (tổng hợp từ các doc trên + `src/reports/incomeCalcCore.ts`):
+[**report-field-formulas.md**](../report-field-formulas.md).
+
 ## Shared concepts
 
 ### Access gate

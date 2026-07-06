@@ -29,10 +29,23 @@ export class OrderHistoryPage extends BasePage {
   readonly refundButton: Locator;
   readonly cancelButton: Locator;
   readonly confirmDialog: Locator;
+  readonly filterButton: Locator;
+  readonly receiptButton: Locator;
+  readonly emptyDetailMessage: Locator;
+  readonly orderCards: Locator;
 
   constructor(page: Page) {
     super(page);
-    this.searchInput = page.getByPlaceholder(/search/i);
+    this.searchInput = page.getByPlaceholder(/search order id/i);
+    // The toolbar "Filter" button (opens the filter dialog) — anchored so it
+    // never matches other buttons that merely contain the word.
+    this.filterButton = page.getByRole('button', { name: /^Filter$/i });
+    // Detail-panel "Receipt" button; present for every order regardless of status.
+    this.receiptButton = page.getByRole('button', { name: /^Receipt$/i });
+    // Empty-state message shown in the right panel before an order is selected.
+    this.emptyDetailMessage = page.getByText(/Select an order to view details/i);
+    // Order rows are `<a>` links to `/order-history/<uuid>`.
+    this.orderCards = page.locator('a[href*="/order-history/"]');
     // Detail-page action buttons are labelled "Refund Order" / "Cancel Order"
     // (not bare "Refund"/"Cancel") — match the real wording, anchored so the
     // confirm-dialog buttons don't widen the match.
@@ -235,5 +248,176 @@ export class OrderHistoryPage extends BasePage {
 
     // Refunds void payments and are passcode-gated, same as cancel.
     await this.enterPasscodeIfPrompted(opts.passcode);
+  }
+
+  // -------------------------------------------------- read-only list helpers
+
+  /** Number of order cards currently rendered in the list. */
+  async orderCardCount(): Promise<number> {
+    return this.orderCards.count();
+  }
+
+  /** OD-code of the first order card, or null when the list is empty. */
+  async firstOrderCode(): Promise<string | null> {
+    if ((await this.orderCards.count()) === 0) return null;
+    const text = (await this.orderCards.first().textContent()) ?? '';
+    return text.match(/OD\d{6}-\d+/)?.[0] ?? null;
+  }
+
+  /** Open the first order in the list and wait for the detail panel to mount. */
+  async openFirstOrder(): Promise<void> {
+    await this.orderCards.first().click();
+    await expect(this.page).toHaveURL(/\/order-history\/[^?]+/);
+    await expect(this.receiptButton).toBeVisible();
+  }
+
+  /**
+   * Open the first order whose card text matches `statusText` (e.g. /Settled/,
+   * /Canceled/). Returns false — and opens nothing — when none is found, so the
+   * caller can `test.skip` on status-dependent scenarios.
+   */
+  async openFirstOrderWithStatus(statusText: RegExp): Promise<boolean> {
+    const match = this.orderCards.filter({ hasText: statusText }).first();
+    if ((await match.count()) === 0) return false;
+    await match.click();
+    await expect(this.page).toHaveURL(/\/order-history\/[^?]+/);
+    await expect(this.receiptButton).toBeVisible();
+    return true;
+  }
+
+  /** A detail-panel section/field located by its visible heading or label text. */
+  detailText(name: string | RegExp): Locator {
+    return this.page.getByText(name).first();
+  }
+
+  // ------------------------------------------------------------ search
+
+  /** Type into the order search box; waits out the input debounce. */
+  async search(term: string): Promise<void> {
+    await this.searchInput.fill(term);
+    await this.page.waitForTimeout(700);
+  }
+
+  async clearSearch(): Promise<void> {
+    await this.searchInput.fill('');
+    await this.page.waitForTimeout(700);
+  }
+
+  // --------------------------------------------------------- filter dialog
+
+  /** The Filter dialog (shadcn dialog scoped by its "Filter" heading). */
+  get filterDialog(): Locator {
+    return this.page.getByRole('dialog').filter({ hasText: /Filter|Bộ lọc/ });
+  }
+
+  async openFilter(): Promise<void> {
+    await this.filterButton.click();
+    await expect(this.filterDialog).toBeVisible();
+  }
+
+  /**
+   * Inside the open Filter dialog, expand the Payment Method sub-popover. Its
+   * options render as checkboxes (Card / Cash / Gift Card / Other) in a separate
+   * popover surface.
+   */
+  async openFilterPaymentMethods(): Promise<void> {
+    await this.filterDialog.getByRole('button', { name: /Select payment method/i }).click();
+    // exact — "Card" would otherwise also match the "Gift Card" checkbox.
+    await expect(this.page.getByRole('checkbox', { name: 'Card', exact: true })).toBeVisible();
+  }
+
+  /** Inside the open Filter dialog, expand the Status sub-popover (checkboxes). */
+  async openFilterStatuses(): Promise<void> {
+    await this.filterDialog.getByRole('button', { name: /Select status/i }).click();
+    await expect(
+      this.page.getByRole('checkbox', { name: 'Successful - Settled', exact: true }),
+    ).toBeVisible();
+  }
+
+  // ---------------------------------------------------------- date picker
+
+  /** The calendar popover (rendered as role="dialog" holding an "Apply" button). */
+  get datePickerPopover(): Locator {
+    return this.page
+      .getByRole('dialog')
+      .filter({ has: this.page.getByRole('button', { name: /^Apply$/ }) });
+  }
+
+  async openDatePicker(): Promise<void> {
+    await this.dateFilterButton().click();
+    await expect(this.datePickerPopover).toBeVisible();
+  }
+
+  // ------------------------------------------------------- receipt dialog
+
+  /** Any modal surface (dialog or alertdialog) currently open. */
+  get anyDialog(): Locator {
+    return this.page.getByRole('dialog').or(this.page.getByRole('alertdialog'));
+  }
+
+  /** Click "Receipt" on the open order and wait for its modal to appear. */
+  async openReceipt(): Promise<void> {
+    await this.receiptButton.click();
+    await expect(this.anyDialog.last()).toBeVisible();
+  }
+
+  /**
+   * Dismiss the top-most modal WITHOUT confirming. Tries Escape first (closes
+   * popovers + most dialogs), then falls back to the explicit "Close"/"Đóng"
+   * button — Escape alone is focus-dependent and can miss a Radix dialog.
+   */
+  async dismissActiveDialog(): Promise<void> {
+    await this.page.keyboard.press('Escape');
+    await this.page.waitForTimeout(150);
+    if ((await this.anyDialog.count()) > 0) {
+      const closeBtn = this.page.getByRole('button', { name: /^(Close|Đóng)$/i }).last();
+      if (await closeBtn.isVisible().catch(() => false)) await closeBtn.click().catch(() => {});
+    }
+  }
+
+  /**
+   * Belt-and-suspenders cleanup for the continuous one-big-test flow: ensure no
+   * dialog/popover is left open so the next check starts from a clean surface. A
+   * leaked modal's overlay would otherwise intercept every later click.
+   */
+  async ensureNoModal(): Promise<void> {
+    for (let i = 0; i < 4 && (await this.anyDialog.count()) > 0; i++) {
+      await this.page.keyboard.press('Escape');
+      await this.page.waitForTimeout(150);
+      if ((await this.anyDialog.count()) === 0) break;
+      const closeBtn = this.page.getByRole('button', { name: /^(Close|Đóng)$/i }).last();
+      if (await closeBtn.isVisible().catch(() => false)) {
+        await closeBtn.click().catch(() => {});
+        await this.page.waitForTimeout(150);
+      }
+    }
+  }
+
+  // ----------------------------- status-dependent action-button getters
+
+  get adjustTipButton(): Locator {
+    return this.page.getByRole('button', { name: /Adjust Tip|Chỉnh tip/i });
+  }
+
+  get reopenButton(): Locator {
+    return this.page.getByRole('button', { name: /Re-?Open|Mở lại/i });
+  }
+
+  /**
+   * Open the Refund confirm dialog but do NOT confirm — for verifying the modal
+   * appears without mutating backend state. Caller must be on a settled order.
+   */
+  async openRefundDialogOnly(): Promise<void> {
+    await this.refundButton.click();
+    await expect(this.anyDialog.last()).toBeVisible();
+  }
+
+  /**
+   * Open the Cancel/Void confirm dialog but do NOT confirm. Caller must be on an
+   * unsettled order. Safety: never press a "Confirm" button here.
+   */
+  async openCancelDialogOnly(): Promise<void> {
+    await this.cancelButton.click();
+    await expect(this.anyDialog.last()).toBeVisible();
   }
 }

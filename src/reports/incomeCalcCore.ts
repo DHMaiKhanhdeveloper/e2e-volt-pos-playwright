@@ -199,7 +199,9 @@ export const computeIncomeSummary = (
     const pay1 = rdiv(base * c.pay1Split, 100) - cleanUp - (c.compType === 'commission' ? cardFee : 0);
     const pay2 = totalInc - pay1;
     P.comm += commission;
-    P.tip += tip;
+    // Staff Payout "Tip" is the EFFECTIVE tip (a staff with Exclude Tips ON has
+    // their whole tip removed), matching report.rs / the app's Staff Payout Tip.
+    P.tip += effTip;
     P.clean += cleanUp;
     P.card += cardFee;
     P.salary += salaryReport;
@@ -216,7 +218,7 @@ export const computeIncomeSummary = (
       commission,
       supplyShare,
       salonCommission: salonCommSt,
-      tip,
+      tip: effTip,
       cleanUp,
       cardFee,
       salary: salaryReport,

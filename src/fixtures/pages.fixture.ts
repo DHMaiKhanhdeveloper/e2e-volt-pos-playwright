@@ -6,6 +6,7 @@ import { OtherPaymentPage } from '@pages/pos/OtherPaymentPage';
 import { PaymentSuccessPage } from '@pages/pos/PaymentSuccessPage';
 import { DailySaleReportPage } from '@pages/pos/DailySaleReportPage';
 import { IncomeSummaryPage } from '@pages/pos/IncomeSummaryPage';
+import { IncomeStaffPage } from '@pages/pos/IncomeStaffPage';
 import { OrderHistoryPage } from '@pages/pos/OrderHistoryPage';
 import { TimeTrackingPage } from '@pages/pos/TimeTrackingPage';
 import { EmployeeSettingsPage } from '@pages/settings/EmployeeSettingsPage';
@@ -21,6 +22,7 @@ export interface PagesFixture {
   paymentSuccessPage: PaymentSuccessPage;
   dailySaleReportPage: DailySaleReportPage;
   incomeSummaryPage: IncomeSummaryPage;
+  incomeStaffPage: IncomeStaffPage;
   orderHistoryPage: OrderHistoryPage;
   timeTrackingPage: TimeTrackingPage;
   employeeSettingsPage: EmployeeSettingsPage;
@@ -50,6 +52,9 @@ export const pagesFixture = base.extend<PagesFixture>({
   },
   incomeSummaryPage: async ({ page }, use) => {
     await use(new IncomeSummaryPage(page));
+  },
+  incomeStaffPage: async ({ page }, use) => {
+    await use(new IncomeStaffPage(page));
   },
   orderHistoryPage: async ({ page }, use) => {
     await use(new OrderHistoryPage(page));

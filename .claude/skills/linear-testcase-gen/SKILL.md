@@ -15,12 +15,16 @@ Playwright MCP, viết **file test case `.md`** (liệt kê đủ case), rồi *
 Playwright dựa trên chính file `.md` đó.
 
 ## Đầu vào
+
 - Tên màn hình / tính năng. Lấy từ `args` hoặc câu hỏi của user.
 - Nếu đã có `docs/features/<man-hinh>.md` (output của skill `linear-feature-spec`) thì
   đọc luôn để tiết kiệm — coi đó là nguồn tính năng đã tổng hợp.
 
 ## Đầu ra (BẮT BUỘC)
+
 - **File test case:** `docs/testcases/<kebab-man-hinh>-testcases.md` (folder riêng của skill này).
+- **Bản HTML kèm hình ảnh (BẮT BUỘC):** `reports/<slug>/testcases.html` — render từ file `.md` trên,
+  tự-chứa (hero screenshot + ảnh inline). Xem bước cuối.
 - **Code test** sinh theo quy ước repo:
   - Page object (nếu thiếu): `src/pages/pos|settings/<Man>Page.ts` — kế thừa `BasePage`.
   - Spec: `tests/regression/<nhom>/<man-hinh>/TC-*.spec.ts` (dùng `@fixtures/index`,
@@ -35,6 +39,12 @@ Playwright dựa trên chính file `.md` đó.
 2. **Quét màn hình bằng Playwright MCP.**
    - Mở app, điều hướng tới màn hình, liệt kê các phần tử tương tác, luồng thao tác,
      validation, thông báo lỗi/thành công, trạng thái rỗng, phân trang, filter, popup.
+   - ⚠️ **QUÉT ĐẦY ĐỦ (bắt buộc) — bài học VP-2252:** trước khi liệt kê, phải **cuộn hết trang**
+     - **mở mọi khối thu gọn** (`aria-expanded="false"`, "Show more") + **mở panel/dialog chi tiết**
+       (click 1 dòng dữ liệu). Nội dung lazy / dưới màn hình / trong panel (vd "Pay 1/2", "Rate",
+       5 khối chi tiết Income) chỉ mount sau các bước này → nếu bỏ qua sẽ **thiếu test case**.
+       Tham chiếu helper `scrollThroughPage()` / `expandPanelSections()` trong `src/utils/`.
+   - Sinh test case **cho cả trạng thái panel chi tiết + khối thu gọn**, không chỉ view mặc định.
    - Ghi lại selector/role/label thực tế để dùng khi sinh code (ưu tiên `getByRole`,
      `getByText`, `data-testid` nếu có).
 
@@ -50,9 +60,9 @@ Playwright dựa trên chính file `.md` đó.
 
    # Test Cases — <Tên màn hình>
 
-   | ID | Tiêu đề | Tiền điều kiện | Các bước | Kết quả mong đợi | Loại | Ưu tiên |
-   |----|---------|----------------|----------|------------------|------|---------|
-   | TC-<MAN>-01 | ... | ... | 1... 2... | ... | e2e/regression | P1 |
+   | ID          | Tiêu đề | Tiền điều kiện | Các bước  | Kết quả mong đợi | Loại           | Ưu tiên |
+   | ----------- | ------- | -------------- | --------- | ---------------- | -------------- | ------- |
+   | TC-<MAN>-01 | ...     | ...            | 1... 2... | ...              | e2e/regression | P1      |
    ```
 
    Mỗi case phải map được 1-1 sang một `test(...)` khi sinh code.
@@ -64,11 +74,21 @@ Playwright dựa trên chính file `.md` đó.
      `Tag`, dùng fixtures `@fixtures/index`, đặt tên test chứa ID (`TC-<MAN>-01: ...`).
    - Chạy typecheck / lint nếu nhanh (`npm run lint` hoặc `tsc --noEmit`) và sửa lỗi.
 
-5. **Báo cáo.** Liệt kê: file test case `.md` đã tạo, các file code đã sinh (đường dẫn),
+5. **Xuất HTML kèm hình ảnh (BẮT BUỘC).** Render file test case `.md` thành HTML tự-chứa (nhúng ảnh):
+
+   ```bash
+   node scripts/md-to-html.mjs docs/testcases/<slug>-testcases.md --screen <slug> --out reports/<slug>/testcases.html
+   npm run reports:index
+   ```
+
+   Hero screenshot lấy từ `docs/features/<slug>-assets/` (skill 1) hoặc `reports/<slug>/screens/`.
+
+6. **Báo cáo.** Liệt kê: file test case `.md`, `reports/<slug>/testcases.html`, các file code đã sinh,
    số TC, và cách chạy (`npx playwright test <path>`).
 
 ## Ràng buộc
-- File `.md` test case chỉ nằm trong `docs/testcases/`. Code theo đúng cây thư mục repo.
+
+- File `.md` test case trong `docs/testcases/`; HTML kèm ảnh trong `reports/<slug>/testcases.html`. Code theo cây thư mục repo.
 - Bám sát convention có sẵn: import alias (`@fixtures`, `@utils`, `@/`), naming `TC-*`,
   page object kế thừa `BasePage`. Xem mẫu ở `tests/regression/i18n/*.spec.ts`.
 - Không bịa selector: mọi locator phải bắt nguồn từ kết quả quét Playwright MCP.

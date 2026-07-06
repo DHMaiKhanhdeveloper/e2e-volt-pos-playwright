@@ -32,8 +32,8 @@ import {
  *
  * SAME CONTRACT as the full scan: switch language via the UI ONCE, then reach
  * /order-history client-side (router) — never `page.goto` (a reload reverts the
- * language). Output → reports/i18n-audit/order-history-scan.{html,json} +
- * order-history-screens/<page>.png (failing surfaces only). Gate by default;
+ * language). Output → reports/order-history/order-history-scan.{html,json} +
+ * reports/order-history/screens/<page>.png (failing surfaces only). Gate by default;
  * set I18N_LENIENT=1 for an informational run that never fails.
  *
  * Spec map: docs/i18n/order-history-translation-map.md
@@ -44,8 +44,8 @@ test.describe(`i18n — Order History Vietnamese deep scan ${Tag.REGRESSION}`, (
   }) => {
     test.setTimeout(180_000);
 
-    const outDir = path.resolve('reports', 'i18n-audit');
-    const screensDir = path.join(outDir, 'order-history-screens');
+    const outDir = path.resolve('reports', 'order-history');
+    const screensDir = path.join(outDir, 'screens');
     const slugify = (s: string): string =>
       s
         .replace(/[^\w]+/g, '-')
@@ -61,7 +61,7 @@ test.describe(`i18n — Order History Vietnamese deep scan ${Tag.REGRESSION}`, (
       if (isUntranslated(scan) || brokenUi) {
         try {
           mkdirSync(screensDir, { recursive: true });
-          const file = `order-history-screens/${slugify(scan.route)}.png`;
+          const file = `screens/${slugify(scan.route)}.png`;
           await page.screenshot({ path: path.join(outDir, file), fullPage: true });
           scan.screenshot = file;
         } catch {
@@ -93,7 +93,7 @@ test.describe(`i18n — Order History Vietnamese deep scan ${Tag.REGRESSION}`, (
         onOpen: async (p) => {
           try {
             mkdirSync(screensDir, { recursive: true });
-            const file = `order-history-screens/popup-${slug}.png`;
+            const file = `screens/popup-${slug}.png`;
             await p
               .locator(DIALOG_SELECTOR)
               .last()

@@ -34,6 +34,8 @@ const BASE_CSS = `
   .drow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
   .drow.strong{font-weight:800;border-bottom:none;border-top:2px solid #d1d5db;margin-top:4px}
   .scroll{overflow-x:auto}
+  table.vtop td{vertical-align:top}
+  .dim{color:var(--muted)}
   .pin{font-size:10px;font-weight:700;background:#eef0ff;color:#4f46e5;border-radius:6px;padding:1px 6px;vertical-align:middle}
   .pin.warn{background:#fef3c7;color:#b45309}
   @media(max-width:900px){.stats{grid-template-columns:1fr 1fr}.cols{grid-template-columns:1fr}}
@@ -125,7 +127,24 @@ export interface DataInputData {
   orders: Array<{
     orderCode: string;
     status: string | null;
-    items: Array<{ staff: string; name: string; priceCents: number; product: unknown }>;
+    items: Array<{
+      staff: string;
+      name: string;
+      priceCents: number;
+      supplyFeeCents: number;
+      product: unknown;
+    }>;
+    /** Per-order money breakdown (from the scraped Order Summary + DSR row). */
+    summary: {
+      supplyFeeCents: number;
+      subtotalCents: number;
+      discountCents: number;
+      netSaleCents: number;
+      saleCents: number;
+      taxCents: number;
+      tipCents: number;
+      totalCents: number;
+    };
   }>;
   compensation: Array<{
     staff: string;
@@ -151,17 +170,32 @@ const pct = (v: number | null): string => (v === null ? '—' : `${v}%`);
 
 export const renderDataInputPage = (d: DataInputData): string => {
   const orderRows = d.orders
-    .flatMap((o) =>
-      (o.items.length
-        ? o.items
-        : [{ staff: '—', name: '(no items)', priceCents: 0, product: null }]
-      ).map(
-        (it, i) =>
-          `<tr><td class="code">${i === 0 ? o.orderCode : ''}</td><td>${i === 0 ? (o.status ?? '') : ''}</td>` +
-          `<td>${it.staff}</td><td>${it.name}${it.product ? ' <span class="pin">product</span>' : ''}</td>` +
-          `<td class="num">${money(it.priceCents)}</td></tr>`,
-      ),
-    )
+    .map((o) => {
+      const lineItems = (
+        o.items.length
+          ? o.items.map(
+              (it) =>
+                `${it.staff} · ${it.name} <b>${usd(it.priceCents)}</b>` +
+                `${it.product ? ' <span class="pin">product</span>' : ''}`,
+            )
+          : ['<span class="dim">(no items)</span>']
+      ).join('<br>');
+      const supplyLines = (
+        o.items.length
+          ? o.items.map((it) => (it.supplyFeeCents ? money(it.supplyFeeCents) : '—'))
+          : ['—']
+      ).join('<br>');
+      const s = o.summary;
+      const disc = s.discountCents ? money(s.discountCents) : '—';
+      return (
+        `<tr><td class="code">${o.orderCode}</td><td>${o.status ?? ''}</td>` +
+        `<td>${lineItems}</td><td class="num">${supplyLines}</td>` +
+        `<td class="num">${money(s.subtotalCents)}</td><td class="num">${disc}</td>` +
+        `<td class="num">${money(s.netSaleCents)}</td><td class="num strong-cell">${money(s.saleCents)}</td>` +
+        `<td class="num">${money(s.taxCents)}</td><td class="num">${money(s.tipCents)}</td>` +
+        `<td class="num strong-cell">${money(s.totalCents)}</td></tr>`
+      );
+    })
     .join('');
 
   const compRows = d.compensation
@@ -188,8 +222,8 @@ export const renderDataInputPage = (d: DataInputData): string => {
     `<div><span class="page-title">Data Input</span><span class="date-badge">${d.reportDate}</span></div>
   <div class="sub">${d.shop ? `<b>${d.shop}</b> · ` : ''}${d.orders.length} orders · ${d.compensation.length} staff · ${d.products.length} products · generated ${d.generatedAt}</div>
 
-  <div class="card"><h2>Orders &amp; Items (scraped)</h2><div class="scroll"><table>
-    <thead><tr><th>Order #</th><th>Status</th><th>Staff</th><th>Service / Item</th><th class="num">Price</th></tr></thead>
+  <div class="card"><h2>Orders &amp; Items (scraped)</h2><div class="scroll"><table class="vtop">
+    <thead><tr><th>Order #</th><th>Status</th><th>Line Items</th><th class="num">Supply Fee</th><th class="num">Subtotal</th><th class="num">Discount</th><th class="num">Net Sale</th><th class="num">Sale</th><th class="num">Tax</th><th class="num">Tip</th><th class="num">Order Total</th></tr></thead>
     <tbody>${orderRows}</tbody>
   </table></div></div>
 

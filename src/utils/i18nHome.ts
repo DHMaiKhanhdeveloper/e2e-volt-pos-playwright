@@ -47,13 +47,22 @@ export const HOME_POPUP_DEFS: PopupDef[] = [
     note: 'Hiện khi bấm Quick Pay lúc chưa chọn nhân viên.',
   },
   {
-    name: 'Trang chủ · Tìm kiếm toàn cục',
+    name: 'Trang chủ · Tìm kiếm toàn cục (Global Search)',
     group: 'POS',
     host: '/home',
+    // The header search is a READONLY <input> wrapped in a clickable
+    // `div.input-wrapper`; the input itself isn't clickable and Ctrl+K does NOT
+    // open the dialog (verified live via MCP 2026-07-05). Click the wrapper. NOTE:
+    // needs the 1920×1080 scan viewport — at a narrow viewport the header search
+    // sits off-screen and the click is skipped.
     open: [
+      { by: 'css', selector: 'header .input-wrapper' },
       { by: 'key', keys: 'Control+KeyK' },
       { by: 'role', role: 'button', name: /^search$|tìm kiếm/i },
     ],
+    // Bug this catches: the 4 tabs (All / Appointment / Customer / Order) stay
+    // English in VN mode — only title/placeholder/empty-state are translated.
+    note: 'Tabs All/Appointment/Customer/Order chưa dịch (còn tiếng Anh) khi ở chế độ VN.',
   },
   {
     name: 'Trang chủ · Quét mã (Scanner)',
@@ -344,5 +353,76 @@ export async function scanHeaderPanels(
     } catch {
       /* header panel unavailable — skip */
     }
+  }
+}
+
+/**
+ * Scan the Chấm công (Time Keeping) dialog specifically. The clock icon in the
+ * header has NO accessible name, so {@link scanHeaderPanels} reaches it by blind
+ * position (fragile). This helper instead uses the dialog's DEEP-LINK — the app
+ * opens it from `?dialog=time-keeping` (verified live via MCP: clicking the clock
+ * icon sets `/home?dialog=time-keeping`). Navigating CLIENT-SIDE with that search
+ * param keeps the language Vietnamese and opens the dialog deterministically.
+ *
+ * Known finding (see docs/i18n/time-keeping-i18n-result.md): the empty state of
+ * the "Nhân viên sẵn sàng" column renders the hardcoded English "No staffs found."
+ * (fixed in app PR #1947, pending merge). Best-effort — never throws.
+ */
+export async function scanTimeKeepingDialog(
+  page: Page,
+  record: (scan: RouteScan) => Promise<void>,
+): Promise<void> {
+  try {
+    await routerNavigate(page, '/home');
+    await page.waitForTimeout(800);
+    await dismissDialog(page);
+    // Client-side navigate with the ?dialog=time-keeping search param (keeps VN).
+    await page.evaluate(() => {
+      const r = (
+        window as unknown as {
+          __TSR_ROUTER__?: { navigate: (o: unknown) => unknown };
+        }
+      ).__TSR_ROUTER__;
+      r?.navigate({ to: '/home', search: { dialog: 'time-keeping' } });
+    });
+    await page.waitForTimeout(1200);
+    // Fallback: if the deep-link didn't surface the dialog, click the clock icon
+    // (icon-only header button that sets the ?dialog=time-keeping URL).
+    let up = await page
+      .locator('[role="dialog"],[role="alertdialog"]')
+      .last()
+      .isVisible()
+      .catch(() => false);
+    if (!up) {
+      await page.evaluate(() => {
+        const norm = (s: string | null): string => (s || '').replace(/\s+/g, ' ').trim();
+        const btns = [...document.querySelectorAll('header button')].filter(
+          (b) => !norm(b.textContent) && !!b.querySelector('svg,img'),
+        );
+        for (const b of btns) {
+          (b as HTMLElement).click();
+          if (location.search.includes('dialog=time-keeping')) break;
+        }
+      });
+      await page.waitForTimeout(1000);
+      up = await page
+        .locator('[role="dialog"],[role="alertdialog"]')
+        .last()
+        .isVisible()
+        .catch(() => false);
+    }
+    if (!up) return; // couldn't open — skip, never fail the scan
+    await record({
+      ...(await detectDialog(page)),
+      route: '/home ▸ Chấm công (Time Keeping)',
+      name: 'Trang chủ · Chấm công (Time Keeping)',
+      group: 'System',
+      redirected: false,
+      popup: true,
+      reachable: true,
+    });
+    await dismissDialog(page);
+  } catch {
+    /* time-keeping dialog unavailable — skip */
   }
 }

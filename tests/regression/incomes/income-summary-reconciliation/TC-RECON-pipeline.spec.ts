@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
-import { shopPasscode } from '@data/static/shops';
+import { shopPasscode, shopPeriodDays } from '@data/static/shops';
 import { PRODUCTS } from '@data/static/products';
 import { parseCentsFromUsd } from '@utils/moneyUtils';
 import { computeIncomeFromOrders } from '@utils/incomeFromOrders';
@@ -85,7 +85,10 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
     const shopName = merchant.id ? merchant.businessName : `Shop ${shopId}`;
     const passcode = shopPasscode(shopId);
 
-    const outDir = path.resolve('reports', 'income-summary', shopId);
+    // Each run gets its own per-date folder (…/<shopId>/<reportDate>/); the
+    // `-latest` pointers stay at the shop root so "most recent" is still easy.
+    const shopDir = path.resolve('reports', 'income-summary', shopId);
+    const outDir = path.join(shopDir, reportDate);
     mkdirSync(outDir, { recursive: true });
     const write = (name: string, obj: unknown): string => {
       const body = JSON.stringify(obj, null, 2);
@@ -188,7 +191,7 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
       compensation,
     });
     writeFileSync(
-      path.join(outDir, 'staff-compensation-latest.json'),
+      path.join(shopDir, 'staff-compensation-latest.json'),
       JSON.stringify({ compensation }, null, 2),
       'utf8',
     );
@@ -236,6 +239,24 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
 
     // ───────────────────────── STEP 6 — sections from the scrape + product supply ─────────────────────────
     // Aggregate revenue + supply + tip per staff from the scraped orders.
+    //
+    // Sign each order by its status so the per-staff figures match the app /
+    // golden: a SALE adds, a REFUND subtracts (its detail line items are scraped
+    // as positive magnitudes — the minus sign lives on the order row), a CANCEL
+    // is excluded entirely. Only SERVICE line items feed staff commission —
+    // retail products and Gift Certificates / Gift Cards are salon Product / Gift
+    // Card Sale, never a staff's service revenue.
+    const orderSign = (status: string | null): number => {
+      if (status && /cancel/i.test(status)) return 0;
+      if (status && /refund/i.test(status)) return -1;
+      return 1;
+    };
+    // A SERVICE is anything that isn't a Gift Certificate / Gift Card. We can't
+    // use the PRODUCTS catalog to detect retail products here — its names overlap
+    // real services (e.g. "Gel Manicure"), so `it.product` wrongly flags services.
+    const isServiceItem = (it: { name: string }): boolean =>
+      !/gift\s*(certificate|card)/i.test(it.name);
+
     const agg = new Map<string, { revenue: number; supply: number; tip: number; items: number }>();
     const bucket = (name: string) => {
       let b = agg.get(name);
@@ -245,16 +266,27 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
       }
       return b;
     };
+    // Store-level net SERVICE sale / refund (services only), for Salon Earnings.
+    let serviceSaleCents = 0;
+    let serviceRefundCents = 0;
     for (const o of orders) {
+      const sign = orderSign(o.status);
+      if (sign === 0) continue; // cancelled order — excluded from every figure
       for (const it of o.items) {
+        if (!isServiceItem(it)) continue; // product / gift card — not staff service revenue
         const b = bucket(it.staff);
-        b.revenue += it.priceCents;
-        b.supply += supplyByName.get(it.name.toLowerCase()) ?? 0;
+        const supply = supplyByName.get(it.name.toLowerCase()) ?? 0;
+        b.revenue += sign * it.priceCents;
+        b.supply += sign * supply;
         b.items += 1;
+        if (sign > 0) serviceSaleCents += it.priceCents;
+        else serviceRefundCents += it.priceCents;
       }
     }
     for (const d of details) {
-      for (const tp of d.tips) bucket(tp.staff).tip += tp.tipCents;
+      const sign = orderSign(d.status);
+      if (sign === 0) continue;
+      for (const tp of d.tips) bucket(tp.staff).tip += sign * tp.tipCents;
     }
 
     // Include checked-in staff who made no sales (salaried staff still earn salary).
@@ -266,7 +298,11 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
     await passcodeDialog.enterPasscode(passcode).catch(() => {});
     await businessInfoPage.waitForReady();
     const payPeriod = await businessInfoPage.readPayPeriod();
-    const periodDays = computePeriodDays(payPeriod, reportDateObj);
+    // A shop seeded with a golden dataset may prorate Salary by Period over a
+    // FIXED number of days that differs from the live Business Info setting —
+    // `shopPeriodDays` (PERIOD_DAYS env → per-shop map) wins when present.
+    const periodDaysOverride = shopPeriodDays(shopId);
+    const periodDays = periodDaysOverride ?? computePeriodDays(payPeriod, reportDateObj);
     write(`pay-period-${reportDate}.json`, {
       meta: {
         step: '7',
@@ -276,7 +312,12 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
       },
       payPeriod,
       periodDays,
-      note: "Today's payroll period isn't locked (finalized=false); salary_by_period = salaryAmount ÷ periodDays.",
+      periodDaysOverride: periodDaysOverride ?? null,
+      note:
+        "Today's payroll period isn't locked (finalized=false); salary_by_period = salaryAmount ÷ periodDays." +
+        (periodDaysOverride != null
+          ? ` periodDays is a per-shop override (${periodDaysOverride}d) — the live Business Info setting is ignored for this shop.`
+          : ''),
     });
 
     // ───────────────────────── STEP 8 — Supply / Staff Payout / Salon via the shared core ─────────────────────────
@@ -309,8 +350,10 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
     });
     const core = computeIncomeSummary(
       {
-        serviceSale: incomeTotals.grossSaleCents,
-        serviceRefund: -incomeTotals.refundSaleCents,
+        // Net SERVICE sale / refund (services only) — Salon Earnings "Total
+        // Service" is service revenue, not the all-tender Net Sale.
+        serviceSale: serviceSaleCents,
+        serviceRefund: serviceRefundCents,
         productSale: 0,
         productRefund: 0,
         giftCardSale: 0,
@@ -350,7 +393,7 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
     const generatedAt = new Date().toISOString();
     const writeHtml = (name: string, body: string): void => {
       writeFileSync(path.join(outDir, `${name}-${reportDate}.html`), body, 'utf8');
-      writeFileSync(path.join(outDir, `${name}-latest.html`), body, 'utf8');
+      writeFileSync(path.join(shopDir, `${name}-latest.html`), body, 'utf8');
     };
     const dsrHtml = renderDailySaleReportPage({
       reportDate,
@@ -377,7 +420,30 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
       reportDate,
       generatedAt,
       shop: shopName,
-      orders: orders.map((o) => ({ orderCode: o.orderCode, status: o.status, items: o.items })),
+      orders: orders.map((o) => {
+        const items = o.items.map((it) => ({
+          ...it,
+          supplyFeeCents: supplyByName.get(it.name.toLowerCase()) ?? 0,
+        }));
+        const supplyFeeCents = items.reduce((acc, it) => acc + it.supplyFeeCents, 0);
+        const subtotalCents = o.detail?.summary.subtotalCents ?? 0;
+        const discountCents = o.detail?.summary.totalDiscountCents ?? 0;
+        return {
+          orderCode: o.orderCode,
+          status: o.status,
+          items,
+          summary: {
+            supplyFeeCents,
+            subtotalCents,
+            discountCents,
+            netSaleCents: subtotalCents - discountCents,
+            saleCents: o.saleCents,
+            taxCents: o.taxCents,
+            tipCents: o.tipCents,
+            totalCents: o.totalCents,
+          },
+        };
+      }),
       compensation,
       products,
     });
@@ -547,7 +613,7 @@ test.describe(`Income Summary — full pipeline (today) ${Tag.REGRESSION}`, () =
       },
       perStaff: core.staff,
     });
-    writeFileSync(path.join(outDir, 'income-summary-full-latest.json'), fullBody, 'utf8');
+    writeFileSync(path.join(shopDir, 'income-summary-full-latest.json'), fullBody, 'utf8');
 
     // OUTPUT (2) — Income Summary HTML: faithful to the app panel when scraped,
     // else a computed fallback.

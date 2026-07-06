@@ -238,6 +238,8 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'tip',
     'tax',
     'staff',
+    'staffs',
+    'found', // empty states: "No staffs found.", "No results found" — must be flagged
     'today',
     'latest',
     'search',
@@ -255,6 +257,7 @@ export function detectScope(opts: DetectOpts): RawDetect {
     'setting',
     'customer',
     'payment',
+    'pay', // "Pay 1"/"Pay 2" payout rows still English (VP-2253)
     'cash',
     'card',
     'discount',
@@ -522,37 +525,35 @@ export function detectScope(opts: DetectOpts): RawDetect {
   // add; dedup by source so shared components collapse to one entry.
   const noName: string[] = [];
   const nnSeen = new Set<string>();
-  root
-    .querySelectorAll('button,[role="button"],[role="menuitem"],[role="tab"]')
-    .forEach((e) => {
-      if (inDataZone(e)) return;
-      const r = e.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) return;
-      const st = getComputedStyle(e as HTMLElement);
-      if (st.display === 'none' || st.visibility === 'hidden') return;
-      const name = (
-        (e.textContent || '').trim() ||
-        e.getAttribute('aria-label') ||
-        e.getAttribute('title') ||
-        ''
-      ).trim();
-      if (name) return; // has a name → handled by the `controls`/`aria` checks
-      if (!e.querySelector('svg,img')) return; // only icon buttons are in scope
-      let src: string | null = null;
-      let n: Element | null = e;
-      for (let i = 0; i < 6 && n; i++) {
-        const s = n.getAttribute('data-tsd-source');
-        if (s) {
-          src = s;
-          break;
-        }
-        n = n.parentElement;
+  root.querySelectorAll('button,[role="button"],[role="menuitem"],[role="tab"]').forEach((e) => {
+    if (inDataZone(e)) return;
+    const r = e.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return;
+    const st = getComputedStyle(e as HTMLElement);
+    if (st.display === 'none' || st.visibility === 'hidden') return;
+    const name = (
+      (e.textContent || '').trim() ||
+      e.getAttribute('aria-label') ||
+      e.getAttribute('title') ||
+      ''
+    ).trim();
+    if (name) return; // has a name → handled by the `controls`/`aria` checks
+    if (!e.querySelector('svg,img')) return; // only icon buttons are in scope
+    let src: string | null = null;
+    let n: Element | null = e;
+    for (let i = 0; i < 6 && n; i++) {
+      const s = n.getAttribute('data-tsd-source');
+      if (s) {
+        src = s;
+        break;
       }
-      const label = src || 'icon (không rõ nguồn)';
-      if (nnSeen.has(label)) return;
-      nnSeen.add(label);
-      noName.push(label);
-    });
+      n = n.parentElement;
+    }
+    const label = src || 'icon (không rõ nguồn)';
+    if (nnSeen.has(label)) return;
+    nnSeen.add(label);
+    noName.push(label);
+  });
 
   // UI vỡ #1 — text visibly clipped by its container (ellipsis / hidden).
   const overflow: string[] = [];
@@ -645,6 +646,63 @@ export async function routerNavigate(page: Page, to: string): Promise<void> {
 }
 
 /**
+ * Scroll the whole screen (window + every inner scroll container) from top to
+ * bottom in steps, then back to top — BEFORE scanning. Report screens (Incomes,
+ * Order History) render tall bodies with lazy/virtualized rows and below-the-fold
+ * panels that only mount once scrolled into view; without this walk the scan (and
+ * the EN↔VI compare) miss everything under the fold. Waits briefly between steps
+ * so IntersectionObserver-mounted content settles. Best-effort — never throws.
+ */
+export async function scrollThroughPage(page: Page, stepPause = 180): Promise<void> {
+  try {
+    // 1) Collect scrollable targets (the window + any overflow:auto/scroll box
+    //    taller than its client height) and their max scrollTop, in-page.
+    const targets = await page.evaluate(() => {
+      const els: { top: number }[] = [];
+      const doc = document.scrollingElement || document.documentElement;
+      els.push({ top: Math.max(0, doc.scrollHeight - doc.clientHeight) });
+      document.querySelectorAll('*').forEach((e) => {
+        const el = e as HTMLElement;
+        if (el.scrollHeight - el.clientHeight <= 40) return;
+        const st = getComputedStyle(el);
+        if (!/(auto|scroll|overlay)/.test(st.overflowY)) return;
+        els.push({ top: Math.max(0, el.scrollHeight - el.clientHeight) });
+      });
+      return els.length;
+    });
+    // 2) Walk down in ~viewport-sized steps, pausing so lazy content mounts,
+    //    then snap back to the top so the scan/compare sees a stable layout.
+    const passes = Math.min(24, Math.max(6, targets * 4));
+    for (let i = 1; i <= passes; i++) {
+      await page.evaluate((frac) => {
+        const doc = document.scrollingElement || document.documentElement;
+        const y = (doc.scrollHeight - doc.clientHeight) * frac;
+        doc.scrollTo(0, y);
+        document.querySelectorAll('*').forEach((e) => {
+          const el = e as HTMLElement;
+          if (el.scrollHeight - el.clientHeight <= 40) return;
+          const st = getComputedStyle(el);
+          if (!/(auto|scroll|overlay)/.test(st.overflowY)) return;
+          el.scrollTo(0, (el.scrollHeight - el.clientHeight) * frac);
+        });
+      }, i / passes);
+      await page.waitForTimeout(stepPause);
+    }
+    await page.evaluate(() => {
+      const doc = document.scrollingElement || document.documentElement;
+      doc.scrollTo(0, 0);
+      document.querySelectorAll('*').forEach((e) => {
+        const el = e as HTMLElement;
+        if (el.scrollHeight - el.clientHeight > 40) el.scrollTo(0, 0);
+      });
+    });
+    await page.waitForTimeout(150);
+  } catch {
+    /* scrolling is best-effort — a screen with no scroll is fine */
+  }
+}
+
+/**
  * Language-agnostic owner-passcode entry: works whether the dialog title is
  * English or Vietnamese, since the keypad digits are language-neutral.
  * No-op if no passcode dialog is showing.
@@ -697,6 +755,8 @@ export async function scanRoute(page: Page, def: RouteDef): Promise<RouteScan> {
     await page.waitForTimeout(1200);
   }
   if (def.expandAll) await expandAllSections(page).catch(() => {});
+  // Reveal below-the-fold / lazy-mounted content (tall report bodies) before scanning.
+  await scrollThroughPage(page);
   const raw = await detectBody(page);
   const redirected = !raw.path.startsWith(def.path.split('?')[0]);
   return { ...raw, route: def.path, name: def.name, group: def.group, redirected };

@@ -15,11 +15,15 @@ file trong luồng, trích **từng đoạn code quan trọng**, giải thích n
 đứng sau (framework, MCP, kỹ thuật). Xuất **một file `.md`**.
 
 ## Đầu vào
+
 - Tên màn hình. Ưu tiên đọc trước `docs/codegen-flow/<x>-flow.md` (output skill 3) để biết
   chuỗi file cần đào sâu. Nếu chưa có → tự dựng lại chuỗi bằng Glob/Grep.
 
 ## Đầu ra (BẮT BUỘC)
-- **Đúng một** file: `docs/codegen-detail/<kebab-man-hinh>-detail.md` (folder riêng của skill này).
+
+- **Đúng một** file `.md`: `docs/codegen-detail/<kebab-man-hinh>-detail.md` (folder riêng của skill này).
+- **Bản HTML kèm hình ảnh (BẮT BUỘC):** `reports/<slug>/flow-detail.html` — render từ file `.md` trên,
+  tự-chứa (hero screenshot + code/bảng inline). Xem bước cuối.
 
 ## Các bước
 
@@ -33,10 +37,13 @@ file trong luồng, trích **từng đoạn code quan trọng**, giải thích n
    gen hoặc chạy — ví dụ: Playwright Test, Playwright **MCP** (quét UI), Linear MCP (đọc spec),
    TanStack Router (`window.__TSR_ROUTER__.navigate` để giữ i18n), fixtures/custom test,
    TypeScript path alias (`@/`, `@fixtures`, `@utils`), Allure report, tag system `Tag`.
+   - Nếu luồng dùng **kỹ thuật quét-đầy-đủ**, giải thích rõ: `scrollThroughPage()` (cuộn window + khung
+     `overflow` để mount nội dung lazy), `expandPanelSections()` (mở `aria-expanded=false` + "Show more"),
+     click dòng mở panel chi tiết — vì sao cần (bài học VP-2252: bỏ qua sẽ quét sót phần dưới/panel).
 
 4. **Viết `docs/codegen-detail/<kebab>-detail.md`:**
 
-   ```markdown
+   ````markdown
    ---
    title: Chi tiết luồng code-gen — <Tên màn hình>
    expands: docs/codegen-flow/<x>-flow.md
@@ -46,27 +53,46 @@ file trong luồng, trích **từng đoạn code quan trọng**, giải thích n
    # Chi tiết luồng code-gen — <Tên màn hình>
 
    ## Tổng quan công nghệ
+
    > Bảng: Công nghệ | Vai trò trong luồng gen
 
    ## Chi tiết theo file
+
    ### 1. <đường/dẫn/file>
+
    - **Vai trò trong luồng:** ...
+
    ```ts
    // đoạn code trích thật (có dòng)
    ```
+   ````
+
    - **Giải thích:** ...
    - **Công nghệ dùng để gen/chạy:** ...
 
    ### 2. <file tiếp theo>
+
    ...
 
    ## So với bản map (skill 3)
+
    > Chỗ nào chi tiết hơn: ...
+
    ```
 
-5. **Báo cáo** đường dẫn file, và xác nhận đã giải thích sâu hơn skill 3 (đi tới mức đoạn code
-   + công nghệ, không chỉ file→file).
+   ```
+
+5. **Xuất HTML kèm hình ảnh (BẮT BUỘC).**
+
+   ```bash
+   node scripts/md-to-html.mjs docs/codegen-detail/<slug>-detail.md --screen <slug> --out reports/<slug>/flow-detail.html
+   npm run reports:index
+   ```
+
+6. **Báo cáo** đường dẫn `.md` + `reports/<slug>/flow-detail.html`, xác nhận đã giải thích sâu hơn skill 3
+   (đi tới mức đoạn code + công nghệ, không chỉ file→file).
 
 ## Ràng buộc
-- Chỉ ghi trong `docs/codegen-detail/`. Mọi đoạn code trích phải **copy đúng** từ file thật
-  (Read trước khi trích, kèm đường dẫn + số dòng). Không bịa API hay công nghệ không có trong repo.
+
+- Ghi `.md` trong `docs/codegen-detail/`; HTML kèm ảnh trong `reports/<slug>/flow-detail.html`. Mọi đoạn code trích
+  phải **copy đúng** từ file thật (Read trước khi trích, kèm đường dẫn + số dòng). Không bịa API/công nghệ.

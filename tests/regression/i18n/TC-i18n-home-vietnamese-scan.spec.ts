@@ -12,7 +12,12 @@ import {
   type RouteScan,
 } from '@utils/i18nScan';
 import { scanPopup } from '@utils/i18nPopups';
-import { HOME_POPUP_DEFS, scanHomeOrderDialogs, scanHeaderPanels } from '@utils/i18nHome';
+import {
+  HOME_POPUP_DEFS,
+  scanHomeOrderDialogs,
+  scanHeaderPanels,
+  scanTimeKeepingDialog,
+} from '@utils/i18nHome';
 
 /**
  * VP-462 — Vietnamese DEEP scan of the Home screen ONLY.
@@ -25,16 +30,16 @@ import { HOME_POPUP_DEFS, scanHomeOrderDialogs, scanHeaderPanels } from '@utils/
  *
  * SAME CONTRACT as the full scan: switch language via the UI ONCE, then reach
  * /home client-side (router) — never `page.goto` (a reload reverts the
- * language). Output → reports/i18n-audit/home-scan.{html,json} +
- * home-screens/<page>.png (failing surfaces only). Gate by default; set
+ * language). Output → reports/home/home-scan.{html,json} +
+ * reports/home/screens/<page>.png (failing surfaces only). Gate by default; set
  * I18N_LENIENT=1 for an informational run that never fails.
  */
 test.describe(`i18n — Home Vietnamese deep scan ${Tag.REGRESSION}`, () => {
   test('TC-I18N-VI-HOME: Home screen + popups still in English', async ({ page }) => {
     test.setTimeout(180_000);
 
-    const outDir = path.resolve('reports', 'i18n-audit');
-    const screensDir = path.join(outDir, 'home-screens');
+    const outDir = path.resolve('reports', 'home');
+    const screensDir = path.join(outDir, 'screens');
     const slugify = (s: string): string =>
       s
         .replace(/[^\w]+/g, '-')
@@ -50,7 +55,7 @@ test.describe(`i18n — Home Vietnamese deep scan ${Tag.REGRESSION}`, () => {
       if (isUntranslated(scan) || brokenUi) {
         try {
           mkdirSync(screensDir, { recursive: true });
-          const file = `home-screens/${slugify(scan.route)}.png`;
+          const file = `screens/${slugify(scan.route)}.png`;
           await page.screenshot({ path: path.join(outDir, file), fullPage: true });
           scan.screenshot = file;
         } catch {
@@ -82,7 +87,7 @@ test.describe(`i18n — Home Vietnamese deep scan ${Tag.REGRESSION}`, () => {
         onOpen: async (p) => {
           try {
             mkdirSync(screensDir, { recursive: true });
-            const file = `home-screens/popup-${slug}.png`;
+            const file = `screens/popup-${slug}.png`;
             await p
               .locator('[role="dialog"],[role="alertdialog"]')
               .last()
@@ -104,6 +109,10 @@ test.describe(`i18n — Home Vietnamese deep scan ${Tag.REGRESSION}`, () => {
 
     // 4b) Header status panels (Notifications, Time Keeping, Devices).
     await scanHeaderPanels(page, record);
+
+    // 4c) Chấm công (Time Keeping) dialog via its deep-link — deterministic scan
+    //     of the check-in panel (catches the "No staffs found." empty state).
+    await scanTimeKeepingDialog(page, record);
 
     // 5) Write a Home-scoped report (HTML + JSON).
     const generatedAt = new Date().toISOString();

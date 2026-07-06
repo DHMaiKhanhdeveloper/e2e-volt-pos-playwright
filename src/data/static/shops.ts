@@ -38,3 +38,32 @@ export const DEFAULT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 /** Resolve a shop's timezone: `TZ_ID` env override → map → default. */
 export const shopTimezone = (shopId?: string): string =>
   process.env.TZ_ID ?? (shopId ? SHOP_TIMEZONES[shopId] : undefined) ?? DEFAULT_TIMEZONE;
+
+/**
+ * Per-shop pay-period LENGTH (days) override — the `salary_by_period` proration
+ * divisor (salary ÷ periodDays). Normally the pipeline derives this from
+ * Settings → Business Info (`computePeriodDays`), but a shop seeded with a golden
+ * dataset expects a FIXED period length that may differ from whatever the live
+ * Business Info screen currently shows. List those shops here so the computed
+ * Income Summary matches the golden file instead of the live (mismatched)
+ * setting — e.g. the golden no1016 dataset prorates Salary by Period over 3 days.
+ *
+ * Override at runtime with `PERIOD_DAYS=<n>` (wins over this map). A shop not
+ * listed here falls back to the Business-Info-derived length.
+ */
+export const SHOP_PERIOD_DAYS: Record<string, number> = {
+  '12': 3, // Volt POS 12 — golden dataset prorates Salary by Period over 3 days
+};
+
+/**
+ * Resolve a shop's pay-period length override: `PERIOD_DAYS` env → map →
+ * `undefined` (caller falls back to the Business-Info-derived length).
+ */
+export const shopPeriodDays = (shopId?: string): number | undefined => {
+  const env = process.env.PERIOD_DAYS;
+  if (env !== undefined && env !== '') {
+    const n = Number(env);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return shopId ? SHOP_PERIOD_DAYS[shopId] : undefined;
+};
