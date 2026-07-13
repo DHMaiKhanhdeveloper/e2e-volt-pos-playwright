@@ -17,6 +17,8 @@
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
     "typecheck": "tsc --noEmit",
     "reports:index": "node scripts/build-reports-index.mjs",
+    "dashboard": "node scripts/run-dashboard.mjs",
+    "dashboard:build": "node scripts/build-dashboard.mjs",
     "pretest": "node scripts/check-server.mjs",
     "test": "cross-env ENV=local playwright test",
     "test:local": "cross-env ENV=local playwright test",

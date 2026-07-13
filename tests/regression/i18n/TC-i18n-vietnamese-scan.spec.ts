@@ -10,6 +10,8 @@ import {
   routerNavigate,
   enterPasscodeIfPrompted,
   detectBody,
+  detectEnDateTimeHits,
+  DATA_ZONE_SELECTORS,
   renderI18nReport,
   dedupUntranslated,
   diffStrings,
@@ -24,6 +26,7 @@ import {
   scanCustomerDisplay,
 } from '@utils/i18nHome';
 import { scanSplitOrder } from '@utils/i18nSplitOrder';
+import { scanCashOtherPayment } from '@utils/i18nCheckoutPayment';
 import {
   ORDER_HISTORY_POPUP_DEFS,
   scanOrderHistoryFilter,
@@ -163,7 +166,18 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
     // 2) Scan every static route.
     for (const def of STATIC_ROUTES) {
       try {
-        await record(await scanRoute(page, def));
+        const scan = await scanRoute(page, def);
+        // VP-2325 — Business Info payroll period + per-day working hours render
+        // English date/time ("Jul 01 - Jul 10, 2026", "09:00 AM - 05:00 PM") that
+        // the generic detector skips as bare DATA. Merge the shared EN-datetime
+        // detector for this one route only. Best-effort — never throws.
+        if (def.path === '/settings/business') {
+          const dateHits = await detectEnDateTimeHits(page, 'main', DATA_ZONE_SELECTORS).catch(
+            () => [],
+          );
+          if (dateHits.length) scan.ui = [...new Set([...scan.ui, ...dateHits])];
+        }
+        await record(scan);
       } catch (err) {
         scans.push({
           route: def.path,
@@ -366,6 +380,24 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
         name: 'Order · Tiến hành thanh toán thẻ (present → read → "Processing")',
         note: 'Luồng tiến hành thanh toán thẻ ("Total Amount"/"Tip"/"PRESENT CARD" → "CARD READ OK, REMOVE CARD" → "Processing") — cần đầu đọc thẻ + giao dịch thật. Kiểm tra thủ công (VP-2321).',
       },
+      // The 2 rows below are the CUSTOMER-facing counterparts of Custom tip
+      // (VP-2315) and Add Signature (VP-2317) above — the tip-entry and
+      // signing steps are shown on the SECOND screen (Customer Display,
+      // /customer), not just the staff terminal. Tracked separately so both
+      // surfaces of each step are on record — see docs/i18n/
+      // vietnamese-scan-flow.md §3.5(a) VP-2303 for the sibling Add Tip/
+      // Payment Complete customer-display rows already covered by
+      // `scanCustomerDisplay()`.
+      {
+        route: '/customer ▸ Custom tip (thanh toán thẻ, màn khách hàng)',
+        name: 'Customer Display · Custom tip (luồng thanh toán thẻ)',
+        note: 'Màn hình khách hàng (thứ 2) hiện màn nhập tip tuỳ chọn ("Custom tip on $110.00", nút "Done") khi khách tự chọn số tiền tip trong lúc thanh toán thẻ — cùng nội dung với Order/Terminal (VP-2315) nhưng render trên `/customer`, cần kiểm riêng vì có thể dùng component/route khác. Kiểm tra thủ công (VP-2315).',
+      },
+      {
+        route: '/customer ▸ Ký tên (Add Signature, màn khách hàng)',
+        name: 'Customer Display · Ký tên (Add Signature)',
+        note: 'Màn hình khách hàng (thứ 2) là nơi khách THỰC SỰ ký tên ("Add Signature", "Transaction approved. Please sign your name.", "Sign here", "Clear", "Continue") sau khi giao dịch thẻ được duyệt — cùng nội dung với Order/Terminal (VP-2317) nhưng render trên `/customer`, cần kiểm riêng vì có thể dùng component/route khác. Kiểm tra thủ công (VP-2317).',
+      },
     ];
     for (const { route, name, note } of CARD_PAY_FLOW) {
       scans.push({
@@ -383,6 +415,14 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
         error: note,
       });
     }
+
+    // 4a5) Cash / Other checkout payment panels (VP-2115) — unlike the card
+    //      terminal flow (4a4), neither needs external hardware, so they are
+    //      scanned LIVE (not recorded manual): select the method, scan the
+    //      "Nhập số tiền"/"Tổng đã trả"/"Còn lại"/"Tiền thối" panel, never
+    //      press "Hoàn tất thanh toán" (non-destructive — see
+    //      i18nCheckoutPayment.ts and docs/i18n/vietnamese-scan-flow.md §3.7).
+    await scanCashOtherPayment(page, record);
 
     // 4b) Best-effort: the notification bell panel + the screen a notification
     //     opens (clicking one routes to /appointment?appointmentId=…). Done last
@@ -571,6 +611,35 @@ test.describe(`i18n — Vietnamese coverage scan ${Tag.REGRESSION}`, () => {
               group: 'Settings',
               redirected: false,
             });
+            // VP-2272 — on the "Thông tin" tab (i===0), best-effort open the
+            // "Vai trò nhân viên" role dropdown so its options render before the
+            // scan snapshot above. Note: the option VALUES themselves
+            // (Owner/Manager/Partner/Staff) are exact `DATA_VALUES` the detector
+            // deliberately treats as merchant/role data (not a UI-copy bug), so
+            // opening this only helps report-only UI-vỡ / any surrounding label —
+            // it will NOT flag the option text itself. Best-effort, non-fatal.
+            if (i === 0) {
+              try {
+                const roleTrigger = page
+                  .getByText(/vai trò nhân viên|employee role/i)
+                  .first()
+                  .locator('xpath=following::*[self::button or @role="combobox"][1]');
+                if (await roleTrigger.isVisible().catch(() => false)) {
+                  await roleTrigger.click();
+                  await page.waitForTimeout(600);
+                  await record({
+                    ...(await detectBody(page)),
+                    route: '/settings/staffs → Thông tin ▸ Vai trò nhân viên (dropdown)',
+                    name: 'Nhân viên · Vai trò nhân viên (dropdown)',
+                    group: 'Settings',
+                    redirected: false,
+                  });
+                  await page.keyboard.press('Escape').catch(() => {});
+                }
+              } catch {
+                /* role dropdown unavailable — skip, never fail the scan */
+              }
+            }
           } catch {
             /* tab not clickable — skip */
           }
