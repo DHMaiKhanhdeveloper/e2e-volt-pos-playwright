@@ -17,34 +17,34 @@ import {
   diffStrings,
   isUntranslated,
   type RouteScan,
-} from '@utils/i18nScan';
-import { POPUP_DEFS, scanPopup } from '@utils/i18nPopups';
+} from '@domains/i18n/i18nScan';
+import { POPUP_DEFS, scanPopup } from '@domains/i18n/i18nPopups';
 import {
   HOME_POPUP_DEFS,
   scanHomeOrderDialogs,
   scanTimeKeepingDialog,
   scanCustomerDisplay,
-} from '@utils/i18nHome';
-import { scanSplitOrder } from '@utils/i18nSplitOrder';
-import { scanCashOtherPayment } from '@utils/i18nCheckoutPayment';
+} from '@domains/i18n/i18nHome';
+import { scanSplitOrder } from '@domains/i18n/i18nSplitOrder';
+import { scanCashOtherPayment } from '@domains/i18n/i18nCheckoutPayment';
 import {
   ORDER_HISTORY_POPUP_DEFS,
   scanOrderHistoryFilter,
   scanOrderHistoryDatePicker,
   scanOrderHistoryDetail,
-} from '@utils/i18nOrderHistory';
+} from '@domains/i18n/i18nOrderHistory';
 import {
   ORDER_PENDING_POPUP_DEFS,
   scanOrderPendingFilter,
   scanOrderPendingDatePicker,
   scanOrderPendingCardOpen,
-} from '@utils/i18nOrderPending';
+} from '@domains/i18n/i18nOrderPending';
 import {
   INCOMES_POPUP_DEFS,
   scanIncomesGate,
   scanIncomesDatePicker,
   scanIncomesDetail,
-} from '@utils/i18nIncomes';
+} from '@domains/i18n/i18nIncomes';
 
 /**
  * VP-462 — Vietnamese localization scan.

@@ -1,5 +1,5 @@
 import { formatUsdFromCents } from '@utils/moneyUtils';
-import type { SectionsFromScrape } from '@utils/sectionsFromScrape';
+import type { SectionsFromScrape } from '@domains/income/sectionsFromScrape';
 
 export interface IncomeSummaryHtmlData {
   reportDate: string;

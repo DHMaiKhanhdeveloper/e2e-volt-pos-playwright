@@ -3,8 +3,8 @@ import path from 'node:path';
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
-import { computeIncomeFromOrders, type OrderMoneyRow } from '@utils/incomeFromOrders';
-import { computeStaffPayout, type StaffIncomeLike } from '@utils/staffPayout';
+import { computeIncomeFromOrders, type OrderMoneyRow } from '@domains/income/incomeFromOrders';
+import { computeStaffPayout, type StaffIncomeLike } from '@domains/income/staffPayout';
 
 /**
  * Daily Sale Report → JSON → Income Summary (VP-1048 recon).

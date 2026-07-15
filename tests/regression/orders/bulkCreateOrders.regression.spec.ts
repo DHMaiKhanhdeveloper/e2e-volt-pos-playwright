@@ -1,19 +1,19 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
-import { STAFF, OWNER_PASSCODE } from '@data/static/staff';
+import { OWNER_PASSCODE } from '@data/static/staff';
 import { SERVICES } from '@data/static/services';
 
 const ORDER_CONFIGS = [
-  { staff: STAFF.ELISE_TERRY, services: [SERVICES.GEL_REMOVAL] },
-  { staff: STAFF.EMMA2, services: [SERVICES.DIPPING_OMBRE] },
-  { staff: STAFF.AMELIA, services: [SERVICES.ACRYLIC_REMOVAL] },
-  { staff: STAFF.ISABELLA, services: [SERVICES.WAXING_LIP_CHIN] },
-  { staff: STAFF.LUNA, services: [SERVICES.SPA_SERVICE] },
-  { staff: STAFF.ELISE_TERRY, services: [SERVICES.GEL_REMOVAL, SERVICES.DIPPING_OMBRE] },
-  { staff: STAFF.EMMA2, services: [SERVICES.ACRYLIC_REMOVAL, SERVICES.WAXING_LIP_CHIN] },
-  { staff: STAFF.AMELIA, services: [SERVICES.SPA_SERVICE, SERVICES.GEL_REMOVAL] },
-  { staff: STAFF.ISABELLA, services: [SERVICES.DIPPING_OMBRE, SERVICES.ACRYLIC_REMOVAL] },
-  { staff: STAFF.LUNA, services: [SERVICES.WAXING_LIP_CHIN, SERVICES.SPA_SERVICE] },
+  { services: [SERVICES.GEL_REMOVAL] },
+  { services: [SERVICES.DIPPING_OMBRE] },
+  { services: [SERVICES.ACRYLIC_REMOVAL] },
+  { services: [SERVICES.WAXING_LIP_CHIN] },
+  { services: [SERVICES.SPA_SERVICE] },
+  { services: [SERVICES.GEL_REMOVAL, SERVICES.DIPPING_OMBRE] },
+  { services: [SERVICES.ACRYLIC_REMOVAL, SERVICES.WAXING_LIP_CHIN] },
+  { services: [SERVICES.SPA_SERVICE, SERVICES.GEL_REMOVAL] },
+  { services: [SERVICES.DIPPING_OMBRE, SERVICES.ACRYLIC_REMOVAL] },
+  { services: [SERVICES.WAXING_LIP_CHIN, SERVICES.SPA_SERVICE] },
 ];
 
 test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, () => {
@@ -21,7 +21,7 @@ test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, 
     const config = ORDER_CONFIGS[i];
     const serviceNames = config.services.map((s) => s.name).join(' + ');
 
-    test(`Order ${i + 1}/10: ${config.staff.nickname} — ${serviceNames}`, async ({
+    test(`Order ${i + 1}/10: ${serviceNames}`, async ({
       homePage,
       checkoutPage,
       passcodeDialog,
@@ -30,7 +30,7 @@ test.describe(`Orders — bulk create 10 orders ${Tag.REGRESSION} ${Tag.SLOW}`, 
       await homePage.goto();
 
       await test.step('Select staff', async () => {
-        await homePage.selectStaff(config.staff.nickname);
+        await homePage.selectAnyStaff();
       });
 
       await test.step('Add services', async () => {

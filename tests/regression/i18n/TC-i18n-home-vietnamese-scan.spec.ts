@@ -10,14 +10,14 @@ import {
   dedupUntranslated,
   isUntranslated,
   type RouteScan,
-} from '@utils/i18nScan';
-import { scanPopup } from '@utils/i18nPopups';
+} from '@domains/i18n/i18nScan';
+import { scanPopup } from '@domains/i18n/i18nPopups';
 import {
   HOME_POPUP_DEFS,
   scanHomeOrderDialogs,
   scanHeaderPanels,
   scanTimeKeepingDialog,
-} from '@utils/i18nHome';
+} from '@domains/i18n/i18nHome';
 
 /**
  * VP-462 — Vietnamese DEEP scan of the Home screen ONLY.

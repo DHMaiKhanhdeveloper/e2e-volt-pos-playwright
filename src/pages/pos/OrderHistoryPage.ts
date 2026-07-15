@@ -1,7 +1,14 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 import { BasePage } from '@pages/BasePage';
-import { PasscodeDialog } from '@components/modal/PasscodeDialog';
-import { parseOrderDetailFromText, type OrderDetail } from '@utils/orderDetail';
+import type { OrderDetail } from '@domains/orders/orderDetail';
+import {
+  cancelOrder as cancelOrderAction,
+  refundOrder as refundOrderAction,
+} from './order-history/actions';
+import {
+  collectOrdersForDate as collectOrdersForDateScrape,
+  readOrderDetailById as readOrderDetailByIdScrape,
+} from './order-history/scraping';
 
 /** A row in the Order History list (the card shows staff + amount + time). */
 export interface OrderHistoryCard {
@@ -112,41 +119,12 @@ export class OrderHistoryPage extends BasePage {
    * `/order-history/<id>` and show `MM/DD/YYYY hh:mm AM/PM`.
    */
   async collectOrdersForDate(date: Date): Promise<OrderHistoryCard[]> {
-    const target = OrderHistoryPage.mmddyyyy(date);
-    const byId = new Map<string, OrderHistoryCard>();
-    for (let step = 0; step < 60; step++) {
-      const batch = await this.page.locator('a[href*="/order-history/"]').evaluateAll((els) =>
-        els.map((a) => {
-          const text = (a.textContent || '').replace(/\s+/g, ' ');
-          return {
-            orderCode: text.match(/OD\d{6}-\d+/)?.[0] ?? '',
-            orderId: (a.getAttribute('href') || '').split('/').pop() ?? '',
-            date: text.match(/(\d{2}\/\d{2}\/\d{4}) \d{1,2}:\d{2} (AM|PM)/)?.[1] ?? '',
-          };
-        }),
-      );
-      for (const c of batch) if (c.orderCode && c.date === target) byId.set(c.orderId, c);
-      const grew = await this.page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('a[href*="/order-history/"]'));
-        const last = links[links.length - 1] as HTMLElement | undefined;
-        const before = links.length;
-        last?.scrollIntoView({ block: 'end' });
-        return before;
-      });
-      await this.page.waitForTimeout(200);
-      const after = await this.page.locator('a[href*="/order-history/"]').count();
-      if (after <= grew) break; // no new cards loaded
-    }
-    return [...byId.values()];
+    return collectOrdersForDateScrape(this.page, date);
   }
 
   /** Navigate to an order's detail page (by id) and parse its breakdown. */
   async readOrderDetailById(orderId: string, orderCode: string): Promise<OrderDetail> {
-    await this.page.goto(`/order-history/${orderId}`, { waitUntil: 'domcontentloaded' });
-    await expect(this.page.getByText('Order Summary').first()).toBeVisible({ timeout: 15_000 });
-    await expect(this.page.getByText('Service Details').first()).toBeVisible({ timeout: 15_000 });
-    const text = await this.page.evaluate(() => document.body.innerText);
-    return parseOrderDetailFromText(text, orderCode);
+    return readOrderDetailByIdScrape(this.page, orderId, orderCode);
   }
 
   /**
@@ -174,43 +152,7 @@ export class OrderHistoryPage extends BasePage {
 
   async cancelOrder(opts: { reason?: string; passcode?: string } = {}): Promise<void> {
     await this.cancelButton.click();
-    const dialog = this.confirmDialog;
-    await expect(dialog).toBeVisible();
-
-    // A cancellation reason is mandatory — "Confirm Cancel" stays disabled
-    // until one is chosen from the dropdown. Reasons are a fixed list (the
-    // Select renders its options in a portal, outside the dialog), so use the
-    // requested reason if it's a valid option, else the first available one.
-    await dialog.getByRole('combobox').click();
-    const requested = opts.reason
-      ? this.page.getByRole('option', { name: opts.reason, exact: true })
-      : null;
-    const reason =
-      requested && (await requested.count()) > 0
-        ? requested
-        : this.page.getByRole('option').first();
-    await reason.click();
-
-    const confirm = dialog.getByRole('button', { name: /Confirm Cancel/i });
-    await expect(confirm).toBeEnabled();
-    await confirm.click();
-    await expect(dialog).toBeHidden();
-
-    // Voiding payments is passcode-gated: a passcode dialog pops up after the
-    // confirm. Enter it when present (it may be skipped if the merchant ticked
-    // "don't require for 30 minutes" earlier in the run).
-    await this.enterPasscodeIfPrompted(opts.passcode);
-  }
-
-  /** Enter the passcode if the authorise dialog appears; no-op otherwise. */
-  private async enterPasscodeIfPrompted(passcode?: string): Promise<void> {
-    if (!passcode) return;
-    const passcodeDialog = new PasscodeDialog(this.page);
-    const prompted = await passcodeDialog.dialog
-      .waitFor({ state: 'visible', timeout: 3_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (prompted) await passcodeDialog.enterPasscode(passcode);
+    await cancelOrderAction(this.page, this.confirmDialog, opts);
   }
 
   /**
@@ -223,31 +165,7 @@ export class OrderHistoryPage extends BasePage {
 
   async refundOrder(opts: { reason?: string; passcode?: string } = {}): Promise<void> {
     await this.refundButton.click();
-    const dialog = this.confirmDialog;
-    await expect(dialog).toBeVisible();
-
-    // Mirror the cancel flow: if the confirm is gated behind a reason
-    // dropdown, pick the requested reason (or the first valid one).
-    const combobox = dialog.getByRole('combobox');
-    if (await combobox.count()) {
-      await combobox.click();
-      const requested = opts.reason
-        ? this.page.getByRole('option', { name: opts.reason, exact: true })
-        : null;
-      const reason =
-        requested && (await requested.count()) > 0
-          ? requested
-          : this.page.getByRole('option').first();
-      await reason.click();
-    }
-
-    const confirm = dialog.getByRole('button', { name: /Confirm Refund|Confirm|Refund/i });
-    await expect(confirm).toBeEnabled();
-    await confirm.click();
-    await expect(dialog).toBeHidden();
-
-    // Refunds void payments and are passcode-gated, same as cancel.
-    await this.enterPasscodeIfPrompted(opts.passcode);
+    await refundOrderAction(this.page, this.confirmDialog, opts);
   }
 
   // -------------------------------------------------- read-only list helpers

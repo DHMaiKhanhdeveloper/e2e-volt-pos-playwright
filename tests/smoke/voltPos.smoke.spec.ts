@@ -22,7 +22,9 @@ test.describe(`Volt POS — smoke ${Tag.SMOKE}`, () => {
 
   test('displays staff members', async ({ homePage }) => {
     await homePage.goto();
-    await expect(homePage.page.getByText('Elise Terry')).toBeVisible();
+    await expect(
+      homePage.page.locator('#home-staff-listing [class*="cursor"]').first(),
+    ).toBeVisible();
   });
 
   test('displays service categories', async ({ homePage }) => {

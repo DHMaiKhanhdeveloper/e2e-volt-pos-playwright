@@ -2,7 +2,12 @@ import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { Urls } from '@constants/urls';
 import { ORDER_CODE_RE } from '@pages/pos/OrderPendingPage';
-import { type CheckResult, SkipCheck, summarize, writeCheckReport } from '@utils/checkReport';
+import {
+  type CheckResult,
+  SkipCheck,
+  summarize,
+  writeCheckReport,
+} from '@domains/reporting/checkReport';
 
 /**
  * Order Pending queue (`/order-pending`) — ONE big test, Home-style.

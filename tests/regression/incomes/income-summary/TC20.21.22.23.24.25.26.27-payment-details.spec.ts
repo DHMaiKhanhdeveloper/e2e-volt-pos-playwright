@@ -2,7 +2,12 @@ import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
 import { formatUsdFromCents } from '@utils/moneyUtils';
-import { splitSections, block, valueAfterLabel, MONEY_RE } from '@utils/incomeSummaryDetail';
+import {
+  splitSections,
+  block,
+  valueAfterLabel,
+  MONEY_RE,
+} from '@domains/income/incomeSummaryDetail';
 import type { IncomeSummaryPage } from '@pages/pos/IncomeSummaryPage';
 import type { PasscodeDialog } from '@components/modal/PasscodeDialog';
 import type { IncomeSummaryService } from '@api/services/IncomeSummaryService';

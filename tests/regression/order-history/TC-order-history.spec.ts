@@ -1,7 +1,12 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { Urls } from '@constants/urls';
-import { type CheckResult, SkipCheck, summarize, writeCheckReport } from '@utils/checkReport';
+import {
+  type CheckResult,
+  SkipCheck,
+  summarize,
+  writeCheckReport,
+} from '@domains/reporting/checkReport';
 
 /**
  * Order History (`/order-history`) — ONE big test, Home-style, CONTINUOUS.

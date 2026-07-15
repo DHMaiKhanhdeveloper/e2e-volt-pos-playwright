@@ -11,14 +11,14 @@ import {
   isUntranslated,
   DIALOG_SELECTOR,
   type RouteScan,
-} from '@utils/i18nScan';
-import { scanPopup } from '@utils/i18nPopups';
+} from '@domains/i18n/i18nScan';
+import { scanPopup } from '@domains/i18n/i18nPopups';
 import {
   ORDER_HISTORY_POPUP_DEFS,
   scanOrderHistoryFilter,
   scanOrderHistoryDatePicker,
   scanOrderHistoryDetail,
-} from '@utils/i18nOrderHistory';
+} from '@domains/i18n/i18nOrderHistory';
 
 /**
  * VP-462 — Vietnamese DEEP scan of the Order History screen ONLY.

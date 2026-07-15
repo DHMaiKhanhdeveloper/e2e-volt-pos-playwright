@@ -5,7 +5,7 @@ import {
   detectScope,
   routerNavigate,
   type RouteScan,
-} from '@utils/i18nScan';
+} from '@domains/i18n/i18nScan';
 
 /**
  * Split Order (/order/$id/split-order) deep localization scan — the VP-2287

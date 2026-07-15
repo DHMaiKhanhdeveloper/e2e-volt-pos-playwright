@@ -65,6 +65,27 @@ export class HomePage extends BasePage {
     await this.waitForOrderCreated();
   }
 
+  /**
+   * Picks whichever staff card the UI currently renders first, instead of a
+   * name hard-coded in the test — the seeded staff roster (and who's active)
+   * can change over time, so pinning tests to one nickname makes them brittle.
+   * Returns the picked staff's displayed name for later assertions.
+   */
+  async selectAnyStaff(): Promise<string> {
+    await this.page
+      .waitForFunction(() => !document.querySelector('.is-changing-staff'), undefined, {
+        timeout: 500,
+      })
+      .catch(() => undefined);
+
+    const staffCard = this.page.locator('#home-staff-listing [class*="cursor"]').first();
+    await staffCard.waitFor({ state: 'visible' });
+    const staffName = (await staffCard.textContent())?.trim() ?? '';
+    await staffCard.click({ force: true });
+    await this.waitForOrderCreated();
+    return staffName;
+  }
+
   async selectService(serviceName: string): Promise<void> {
     // Filter the catalogue via the "Search service" box first. The default grid
     // only shows services from the open category, so services that live in a

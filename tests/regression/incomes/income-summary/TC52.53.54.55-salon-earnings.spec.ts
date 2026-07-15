@@ -1,6 +1,6 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
-import { valueAfterLabel } from '@utils/incomeSummaryDetail';
+import { valueAfterLabel } from '@domains/income/incomeSummaryDetail';
 import { openRecentDetail } from './incomeSummary.helpers';
 
 /**

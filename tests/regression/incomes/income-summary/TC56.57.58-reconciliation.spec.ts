@@ -1,7 +1,7 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { parseCentsFromUsd } from '@utils/moneyUtils';
-import { valueAfterLabel, MONEY_RE } from '@utils/incomeSummaryDetail';
+import { valueAfterLabel, MONEY_RE } from '@domains/income/incomeSummaryDetail';
 import { openRecentDetail } from './incomeSummary.helpers';
 
 /**

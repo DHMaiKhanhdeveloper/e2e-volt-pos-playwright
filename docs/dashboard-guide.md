@@ -20,10 +20,10 @@ npm run dashboard
 
 Có 2 loại dashboard trong repo:
 
-| File                                                          | Dùng cho                                                                                                  | Input                                        | Output                                |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------- |
-| `scripts/build-dashboard.mjs` + `scripts/run-dashboard.mjs`   | Toàn bộ suite Playwright (chạy `npm run dashboard`)                                                       | `reports/json/results.json`                  | `reports/dashboard/index.html`        |
-| `src/utils/dashboard.ts` (`renderDashboard`/`writeDashboard`) | Report riêng theo từng màn hình (dùng trong skill `screen-suite-report`, spec "1 test lớn" kiểu màn Home) | mảng `CheckResult[]` từ `@utils/checkReport` | `reports/<slug>/dashboard/index.html` |
+| File                                                                      | Dùng cho                                                                                                  | Input                                                    | Output                                |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------- |
+| `scripts/build-dashboard.mjs` + `scripts/run-dashboard.mjs`               | Toàn bộ suite Playwright (chạy `npm run dashboard`)                                                       | `reports/json/results.json`                              | `reports/dashboard/index.html`        |
+| `src/domains/reporting/dashboard.ts` (`renderDashboard`/`writeDashboard`) | Report riêng theo từng màn hình (dùng trong skill `screen-suite-report`, spec "1 test lớn" kiểu màn Home) | mảng `CheckResult[]` từ `@domains/reporting/checkReport` | `reports/<slug>/dashboard/index.html` |
 
 ## 2. `scripts/run-dashboard.mjs` — lệnh điều phối "chạy test + mở dashboard"
 
@@ -64,7 +64,7 @@ Có thể build lại (không chạy test) bằng:
 node scripts/build-dashboard.mjs
 ```
 
-## 4. `src/utils/dashboard.ts` — dashboard dạng "gallery" cho report theo từng màn hình
+## 4. `src/domains/reporting/dashboard.ts` — dashboard dạng "gallery" cho report theo từng màn hình
 
 Dùng trong flow của skill `screen-suite-report` (gộp toàn bộ test case của 1 màn hình thành 1 spec test lớn, mỗi case là 1 `test.step`).
 

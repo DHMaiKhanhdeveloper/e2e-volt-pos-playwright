@@ -7,7 +7,7 @@ import {
   SkipCheck,
   summarize,
   writeCheckReport,
-} from '@utils/checkReport';
+} from '@domains/reporting/checkReport';
 
 /**
  * Business Info — one big test (kiểu Home): gộp toàn bộ verification của màn

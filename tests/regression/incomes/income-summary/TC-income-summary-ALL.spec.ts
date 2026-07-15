@@ -8,7 +8,7 @@ import {
   SkipCheck,
   summarize,
   writeCheckReport,
-} from '@utils/checkReport';
+} from '@domains/reporting/checkReport';
 import type { DetailSection, GroupBy } from '@pages/pos/IncomeSummaryPage';
 
 /**

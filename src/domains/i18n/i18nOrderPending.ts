@@ -8,8 +8,8 @@ import {
   routerNavigate,
   type RawDetect,
   type RouteScan,
-} from '@utils/i18nScan';
-import { type PopupDef } from '@utils/i18nPopups';
+} from '@domains/i18n/i18nScan';
+import { type PopupDef } from '@domains/i18n/i18nPopups';
 
 /**
  * Order Pending (/order-pending) deep localization scan for the Vietnamese audit.

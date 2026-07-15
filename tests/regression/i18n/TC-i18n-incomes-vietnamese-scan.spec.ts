@@ -11,14 +11,14 @@ import {
   isUntranslated,
   DIALOG_SELECTOR,
   type RouteScan,
-} from '@utils/i18nScan';
-import { scanPopup } from '@utils/i18nPopups';
+} from '@domains/i18n/i18nScan';
+import { scanPopup } from '@domains/i18n/i18nPopups';
 import {
   INCOMES_POPUP_DEFS,
   scanIncomesGate,
   scanIncomesDatePicker,
   scanIncomesDetail,
-} from '@utils/i18nIncomes';
+} from '@domains/i18n/i18nIncomes';
 
 /**
  * VP-462 — Vietnamese DEEP scan of the three INCOME report screens ONLY:

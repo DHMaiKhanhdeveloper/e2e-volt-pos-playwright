@@ -3,7 +3,7 @@ import path from 'node:path';
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
-import { renderIncomeSummaryUi, type IsSection } from '@utils/incomeSummaryUi';
+import { renderIncomeSummaryUi, type IsSection } from '@domains/income/incomeSummaryUi';
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 const ymd = (dt: Date): string =>

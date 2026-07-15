@@ -7,8 +7,8 @@ import {
   SkipCheck,
   summarize,
   writeCheckReport,
-} from '@utils/checkReport';
-import { writeDashboard } from '@utils/dashboard';
+} from '@domains/reporting/checkReport';
+import { writeDashboard } from '@domains/reporting/dashboard';
 
 /**
  * Appointment form (`/appointment`) — Create / Edit / Confirm / Cancel, Home-style.

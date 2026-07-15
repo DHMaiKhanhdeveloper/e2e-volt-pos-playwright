@@ -1,6 +1,6 @@
 import { type Locator, type Page, expect } from '@playwright/test';
 import { BasePage } from '@pages/BasePage';
-import type { PayPeriod, PayPeriodType } from '@utils/payPeriod';
+import type { PayPeriod, PayPeriodType } from '@domains/income/payPeriod';
 
 /**
  * Settings → Business Info — `/settings/business`

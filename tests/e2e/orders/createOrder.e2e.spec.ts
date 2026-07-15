@@ -1,6 +1,6 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
-import { STAFF, OWNER_PASSCODE } from '@data/static/staff';
+import { OWNER_PASSCODE } from '@data/static/staff';
 import { SERVICES } from '@data/static/services';
 
 test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => {
@@ -14,10 +14,10 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     passcodeDialog,
     paymentSuccessPage,
   }) => {
-    const staff = STAFF.ELISE_TERRY;
+    let staffName = '';
 
     await test.step('Select staff member', async () => {
-      await homePage.selectStaff(staff.nickname);
+      staffName = await homePage.selectAnyStaff();
     });
 
     await test.step('Add services', async () => {
@@ -31,7 +31,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
 
     await test.step('Verify order details on checkout', async () => {
       await checkoutPage.verifyOrderDetails({
-        staffName: staff.nickname,
+        staffName,
         services: [
           { name: SERVICES.GEL_REMOVAL.name, price: SERVICES.GEL_REMOVAL.price },
           { name: SERVICES.DIPPING_OMBRE.name, price: SERVICES.DIPPING_OMBRE.price },
@@ -59,7 +59,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
   });
 
   test('does not allow pay without selecting a service', async ({ homePage }) => {
-    await homePage.selectStaff(STAFF.EMMA2.nickname);
+    await homePage.selectAnyStaff();
     await expect(homePage.payButton).toBeDisabled();
   });
 
@@ -69,9 +69,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     passcodeDialog,
     paymentSuccessPage,
   }) => {
-    const staff = STAFF.LUNA;
-
-    await homePage.selectStaff(staff.nickname);
+    await homePage.selectAnyStaff();
     await homePage.selectService(SERVICES.WAXING_LIP_CHIN.name);
     await homePage.selectService(SERVICES.SPA_SERVICE.name);
 
@@ -95,9 +93,7 @@ test.describe(`Orders — create order ${Tag.REGRESSION} ${Tag.PAYMENT}`, () => 
     passcodeDialog,
     paymentSuccessPage,
   }) => {
-    const staff = STAFF.AMELIA;
-
-    await homePage.selectStaff(staff.nickname);
+    await homePage.selectAnyStaff();
     await homePage.selectService(SERVICES.ACRYLIC_REMOVAL.name);
 
     await homePage.clickPay();

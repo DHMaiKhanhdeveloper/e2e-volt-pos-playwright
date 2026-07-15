@@ -1,6 +1,6 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
-import { STAFF, OWNER_PASSCODE } from '@data/static/staff';
+import { OWNER_PASSCODE } from '@data/static/staff';
 import { SERVICES } from '@data/static/services';
 import { PRODUCTS } from '@data/static/products';
 
@@ -38,10 +38,9 @@ test.describe(`Bug — cash order should leave Pending Orders ${Tag.REGRESSION} 
     orderPendingPage,
   }) => {
     // Pick catalogue items generically from the DB-sourced static fixtures so
-    // the test isn't pinned to one specific seeded service/product/staff — any
-    // active staff and any priced service/product reproduces the bug.
-    const staff =
-      Object.values(STAFF).find((s) => s.status === 'active') ?? Object.values(STAFF)[0];
+    // the test isn't pinned to one specific seeded service/product — any
+    // priced service/product reproduces the bug. Staff is whichever card the
+    // UI currently shows first, rather than a fixed nickname.
     const service =
       Object.values(SERVICES).find((s) => s.priceCents > 0) ?? Object.values(SERVICES)[0];
     const product =
@@ -51,7 +50,7 @@ test.describe(`Bug — cash order should leave Pending Orders ${Tag.REGRESSION} 
     let orderNumber = '';
 
     await test.step('Select a staff member', async () => {
-      await homePage.selectStaff(staff.nickname);
+      await homePage.selectAnyStaff();
     });
 
     await test.step('Add a service (so a tip can be collected for the staff)', async () => {

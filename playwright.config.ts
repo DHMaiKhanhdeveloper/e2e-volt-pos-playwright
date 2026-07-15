@@ -16,9 +16,9 @@ export default defineConfig({
   outputDir: './test-results',
   snapshotDir: './tests/visual/__snapshots__',
 
-  timeout: 60 * 1000,
+  timeout: 30 * 1000,
   expect: {
-    timeout: 10 * 1000,
+    timeout: 5 * 1000,
     toHaveScreenshot: { maxDiffPixelRatio: 0.02 },
     toMatchSnapshot: { maxDiffPixelRatio: 0.02 },
   },
@@ -28,7 +28,7 @@ export default defineConfig({
   // order. If the backend is later isolated per-session, workers can go up.
   fullyParallel: false,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
+  retries: isCI ? 1 : 0,
   workers: 1,
 
   reporter: [
@@ -49,11 +49,12 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     actionTimeout: 10_000,
     navigationTimeout: 15_000,
-    // Record everything so the dashboard can replay both passing AND failing flows.
-    // For CI cost-sensitivity, set VIDEO=retain-on-failure to keep only failures.
-    trace: 'on',
-    screenshot: 'on',
-    video: (process.env.VIDEO ?? 'on') as 'on' | 'retain-on-failure' | 'off',
+    // Only keep artifacts for failing tests by default — recording everything
+    // (trace/video/screenshot 'on') was the biggest source of runtime overhead
+    // in the full-suite run. Set TRACE/SCREENSHOT/VIDEO=on to force full capture.
+    trace: (process.env.TRACE ?? 'retain-on-failure') as 'on' | 'retain-on-failure' | 'off',
+    screenshot: (process.env.SCREENSHOT ?? 'only-on-failure') as 'on' | 'only-on-failure' | 'off',
+    video: (process.env.VIDEO ?? 'retain-on-failure') as 'on' | 'retain-on-failure' | 'off',
     locale: 'en-US',
     timezoneId,
     launchOptions: {

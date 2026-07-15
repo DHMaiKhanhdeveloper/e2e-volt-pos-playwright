@@ -9,7 +9,7 @@ import {
   enterPasscodeIfPrompted,
   detectBody,
   scrollThroughPage,
-} from '@utils/i18nScan';
+} from '@domains/i18n/i18nScan';
 import {
   SCREENS,
   captureTexts,
@@ -17,7 +17,7 @@ import {
   summarize,
   suggestFor,
   renderCompareReport,
-} from '@utils/i18nCompare';
+} from '@domains/i18n/i18nCompare';
 
 /**
  * EN ↔ VI translation-quality compare for ONE screen (VP-462, đi kèm skill

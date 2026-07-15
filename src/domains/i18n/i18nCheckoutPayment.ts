@@ -5,7 +5,7 @@ import {
   detectScope,
   routerNavigate,
   type RouteScan,
-} from '@utils/i18nScan';
+} from '@domains/i18n/i18nScan';
 
 /**
  * Checkout payment-method deep scan (/order/$id/checkout) — the Cash ("Tiền

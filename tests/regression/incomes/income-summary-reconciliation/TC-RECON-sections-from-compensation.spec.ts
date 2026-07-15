@@ -6,7 +6,7 @@ import {
   computeSectionsFromCompensation,
   type CompRate,
   type StaffIncomeForSections,
-} from '@utils/incomeSummaryFromCompensation';
+} from '@domains/income/incomeSummaryFromCompensation';
 import type { StaffCompensation } from '@pages/settings/EmployeeSettingsPage';
 
 /**

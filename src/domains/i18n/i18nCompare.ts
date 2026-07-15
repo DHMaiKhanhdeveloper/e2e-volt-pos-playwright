@@ -1,5 +1,5 @@
 import { type Page } from '@playwright/test';
-import { DATA_ZONE_SELECTORS } from '@utils/i18nScan';
+import { DATA_ZONE_SELECTORS } from '@domains/i18n/i18nScan';
 
 /**
  * EN ↔ VI translation-quality comparison for the Vietnamese audit.

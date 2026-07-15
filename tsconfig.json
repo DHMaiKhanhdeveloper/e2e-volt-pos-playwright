@@ -16,6 +16,7 @@
       "@fixtures/*": ["./src/fixtures/*"],
       "@helpers/*": ["./src/helpers/*"],
       "@utils/*": ["./src/utils/*"],
+      "@domains/*": ["./src/domains/*"],
       "@data/*": ["./src/data/*"],
       "@schemas/*": ["./src/schemas/*"],
       "@types/*": ["./src/types/*"],

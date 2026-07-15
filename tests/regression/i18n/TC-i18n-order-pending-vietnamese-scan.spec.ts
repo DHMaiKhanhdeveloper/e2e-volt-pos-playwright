@@ -11,14 +11,14 @@ import {
   isUntranslated,
   DIALOG_SELECTOR,
   type RouteScan,
-} from '@utils/i18nScan';
-import { scanPopup } from '@utils/i18nPopups';
+} from '@domains/i18n/i18nScan';
+import { scanPopup } from '@domains/i18n/i18nPopups';
 import {
   ORDER_PENDING_POPUP_DEFS,
   scanOrderPendingFilter,
   scanOrderPendingDatePicker,
   scanOrderPendingCardOpen,
-} from '@utils/i18nOrderPending';
+} from '@domains/i18n/i18nOrderPending';
 
 /**
  * VP-462 — Vietnamese DEEP scan of the Order Pending screen ONLY.

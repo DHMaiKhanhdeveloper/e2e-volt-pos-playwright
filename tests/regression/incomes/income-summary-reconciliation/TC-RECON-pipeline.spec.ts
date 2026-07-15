@@ -5,19 +5,19 @@ import { Tag } from '@/types/testTags';
 import { shopPasscode, shopPeriodDays } from '@data/static/shops';
 import { PRODUCTS } from '@data/static/products';
 import { parseCentsFromUsd } from '@utils/moneyUtils';
-import { computeIncomeFromOrders } from '@utils/incomeFromOrders';
-import { summarizeStaff } from '@utils/orderDetail';
-import type { SectionsFromScrape } from '@utils/sectionsFromScrape';
+import { computeIncomeFromOrders } from '@domains/income/incomeFromOrders';
+import { summarizeStaff } from '@domains/orders/orderDetail';
+import type { SectionsFromScrape } from '@domains/income/sectionsFromScrape';
 import { computeIncomeSummary, type StaffInput } from '@reports/incomeCalcCore';
-import { computePeriodDays } from '@utils/payPeriod';
-import { renderIncomeSummaryHtml } from '@utils/incomeSummaryHtml';
-import { renderIncomeSummaryUi } from '@utils/incomeSummaryUi';
+import { computePeriodDays } from '@domains/income/payPeriod';
+import { renderIncomeSummaryHtml } from '@domains/income/incomeSummaryHtml';
+import { renderIncomeSummaryUi } from '@domains/income/incomeSummaryUi';
 import {
   renderDailySaleReportPage,
   renderStaffIncomePage,
   renderDataInputPage,
-} from '@utils/reportPages';
-import { renderComparePage, type CompareGroup } from '@utils/comparePage';
+} from '@domains/reporting/reportPages';
+import { renderComparePage, type CompareGroup } from '@domains/reporting/comparePage';
 import type { StaffCompensation } from '@pages/settings/EmployeeSettingsPage';
 
 const pad = (n: number): string => String(n).padStart(2, '0');

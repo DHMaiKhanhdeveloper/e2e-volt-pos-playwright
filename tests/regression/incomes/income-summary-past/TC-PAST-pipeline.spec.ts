@@ -3,10 +3,10 @@ import path from 'node:path';
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { PRODUCTS } from '@data/static/products';
-import { summarizeStaff } from '@utils/orderDetail';
-import { computeSectionsFromScrape, type StaffAgg } from '@utils/sectionsFromScrape';
-import { renderIncomeSummaryHtml } from '@utils/incomeSummaryHtml';
-import type { OrderDetail } from '@utils/orderDetail';
+import { summarizeStaff } from '@domains/orders/orderDetail';
+import { computeSectionsFromScrape, type StaffAgg } from '@domains/income/sectionsFromScrape';
+import { renderIncomeSummaryHtml } from '@domains/income/incomeSummaryHtml';
+import type { OrderDetail } from '@domains/orders/orderDetail';
 import type { StaffCompensation } from '@pages/settings/EmployeeSettingsPage';
 
 const pad = (n: number): string => String(n).padStart(2, '0');

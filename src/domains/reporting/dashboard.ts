@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import type { CheckResult, CheckReportMeta } from '@utils/checkReport';
-import { summarize } from '@utils/checkReport';
+import type { CheckResult, CheckReportMeta } from '@domains/reporting/checkReport';
+import { summarize } from '@domains/reporting/checkReport';
 
 /**
  * Gallery-style dashboard for a "one big test per screen" suite: a card per

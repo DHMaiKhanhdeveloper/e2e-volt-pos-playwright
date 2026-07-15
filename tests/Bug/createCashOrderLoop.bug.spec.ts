@@ -1,6 +1,6 @@
 import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
-import { STAFF, OWNER_PASSCODE } from '@data/static/staff';
+import { OWNER_PASSCODE } from '@data/static/staff';
 import { SERVICES } from '@data/static/services';
 import { PRODUCTS } from '@data/static/products';
 import { Logger } from '@utils/logger';
@@ -45,11 +45,10 @@ test.describe(`Bug — cash order soak loop ${Tag.REGRESSION} ${Tag.PAYMENT}`, (
     test.setTimeout(0); // no timeout — loop until the process is stopped
 
     // Build pools from the DB-sourced static fixtures and ROTATE through them so
-    // every iteration uses a different staff / service / product (cycling once a
-    // pool is exhausted) instead of pinning to one fixed item. Fall back to the
-    // full list if a filter yields nothing.
-    const byActive = Object.values(STAFF).filter((s) => s.status === 'active');
-    const staffPool = byActive.length ? byActive : Object.values(STAFF);
+    // every iteration uses a different service / product (cycling once a pool is
+    // exhausted) instead of pinning to one fixed item. Fall back to the full
+    // list if a filter yields nothing. Staff is whichever card the UI shows
+    // first each iteration, not pinned to a fixed nickname.
     const pricedServices = Object.values(SERVICES).filter((s) => s.priceCents > 0);
     const servicePool = pricedServices.length ? pricedServices : Object.values(SERVICES);
     const pricedProducts = Object.values(PRODUCTS).filter((p) => p.priceCents > 0);
@@ -64,27 +63,27 @@ test.describe(`Bug — cash order soak loop ${Tag.REGRESSION} ${Tag.PAYMENT}`, (
     for (let i = 1; i <= maxIterations; i++) {
       let orderNumber = '';
 
-      // Enumerate DISTINCT (staff × service × product) combinations by mixed-radix
+      // Enumerate DISTINCT (service × product) combinations by mixed-radix
       // decoding the iteration index. Independent `i % len` per pool moved them in
-      // lockstep (staff_k always paired with service_k) and repeated the 3-item
-      // product pool every 3 orders — so combos looked duplicated. This walks every
-      // unique triple before any repeats (period = 14 × 17 × 3 = 714 here).
-      const comboCount = staffPool.length * servicePool.length * productPool.length;
+      // lockstep and repeated the 3-item product pool every 3 orders — so combos
+      // looked duplicated. This walks every unique pair before any repeats.
+      const comboCount = servicePool.length * productPool.length;
       const n = (i - 1) % comboCount;
-      const staff =
-        staffPool[Math.floor(n / (servicePool.length * productPool.length)) % staffPool.length];
       const service = servicePool[Math.floor(n / productPool.length) % servicePool.length];
       const product = productPool[n % productPool.length];
-      log.info(
-        `iteration ${i}${label} — start (staff=${staff.nickname}, service=${service.name}, product=${product.name})`,
-      );
 
       // Equivalent to the single test's `beforeEach` — start each iteration on Home.
       await homePage.goto();
 
+      let staffName = '';
+
       await test.step('Select a staff member', async () => {
-        await homePage.selectStaff(staff.nickname);
+        staffName = await homePage.selectAnyStaff();
       });
+
+      log.info(
+        `iteration ${i}${label} — start (staff=${staffName}, service=${service.name}, product=${product.name})`,
+      );
 
       await test.step('Add a service (so a tip can be collected for the staff)', async () => {
         await homePage.selectService(service.name);

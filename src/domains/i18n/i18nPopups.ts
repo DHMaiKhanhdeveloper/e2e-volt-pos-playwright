@@ -6,7 +6,7 @@ import {
   routerNavigate,
   type RawDetect,
   type RouteScan,
-} from '@utils/i18nScan';
+} from '@domains/i18n/i18nScan';
 
 /**
  * Popup/dialog layer of the Vietnamese localization scan.

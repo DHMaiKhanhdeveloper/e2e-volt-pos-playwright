@@ -9,8 +9,8 @@ import {
   routerNavigate,
   scrollThroughPage,
   type RouteScan,
-} from '@utils/i18nScan';
-import { type PopupDef } from '@utils/i18nPopups';
+} from '@domains/i18n/i18nScan';
+import { type PopupDef } from '@domains/i18n/i18nPopups';
 
 /**
  * Incomes (report) deep localization scan for the Vietnamese audit — covers the
