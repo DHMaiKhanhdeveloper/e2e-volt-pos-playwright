@@ -142,7 +142,7 @@ export interface StaffDailyIncomeOrdersLiveResponse {
 /**
  * Derived totals used in assertions. Matches the formulas the UI is
  * expected to satisfy (see TC-19, 20, 21 in
- * `docs/test-cases/VP-1048-daily-sale-report-test-cases.md`).
+ * `docs/test-cases/income-reports/VP-1048-daily-sale-report-test-cases.md`).
  */
 export interface DailyIncomeTotals {
   incomeSale: number;

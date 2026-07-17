@@ -24,8 +24,12 @@ Nơi lưu trữ các file test case (Markdown) đã được QA review và đố
 
 ## File hiện có
 
-| File                                                                                 | Ticket  | Trang                        | Số TC |
-| ------------------------------------------------------------------------------------ | ------- | ---------------------------- | ----- |
-| [VP-1048-daily-sale-report-test-cases.md](./VP-1048-daily-sale-report-test-cases.md) | VP-1048 | Daily Sale Report            | 44    |
-| [VP-1048-income-summary.md](./VP-1048-income-summary.md)                             | VP-1048 | Income Summary               | 73    |
-| [VP-1402-staff-income.md](./VP-1402-staff-income.md)                                 | VP-1402 | Staff Income & Staff Payroll | 80    |
+### 📊 Income Reports (tổng hợp) → [income-reports/](./income-reports/)
+
+3 báo cáo doanh thu dùng chung nguồn dữ liệu, gom trong [income-reports/](./income-reports/) (có [index tổng hợp](./income-reports/README.md) + đối chiếu chéo):
+
+| File                                                                                                | Ticket  | Trang                        | Số TC |
+| --------------------------------------------------------------------------------------------------- | ------- | ---------------------------- | ----- |
+| [VP-1048-daily-sale-report-test-cases.md](./income-reports/VP-1048-daily-sale-report-test-cases.md) | VP-1048 | Daily Sale Report            | 44    |
+| [VP-1048-income-summary.md](./income-reports/VP-1048-income-summary.md)                             | VP-1048 | Income Summary               | 73    |
+| [VP-1402-staff-income.md](./income-reports/VP-1402-staff-income.md)                                 | VP-1402 | Staff Income & Staff Payroll | 80    |
