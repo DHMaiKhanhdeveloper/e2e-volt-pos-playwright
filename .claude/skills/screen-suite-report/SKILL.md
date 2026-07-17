@@ -22,7 +22,8 @@ HTML + JSON tự-chứa** trong `reports/<màn>/`. Đây là đúng "contract" c
 - Tên / route màn hình (vd `order-history`, `income-summary`, route `/order-history`).
   Lấy từ `args` hoặc câu hỏi user. Nếu mơ hồ → hỏi đúng 1 câu.
 - Nếu đã có test rời (`tests/regression/.../TC-*.spec.ts`) và/hoặc test case `.md`
-  (`docs/testcases/<màn>-testcases.md`) → **đọc làm nguồn**, giữ nguyên ID case.
+  (`docs/screens/<màn>/<màn>-test-cases.md`, mục "## Test Cases") → **đọc làm nguồn**, giữ
+  nguyên ID case.
 
 ## Đầu ra (BẮT BUỘC)
 
@@ -44,11 +45,11 @@ HTML + JSON tự-chứa** trong `reports/<màn>/`. Đây là đúng "contract" c
 
 ## Các bước
 
-1. **Thu thập case.** Đọc `docs/testcases/<màn>-testcases.md` (nếu có) + spec rời hiện tại.
-   Nếu chưa có test → chạy skill `linear-testcase-gen` trước, rồi quay lại gộp.
+1. **Thu thập case.** Đọc `docs/screens/<màn>/<màn>-test-cases.md` (nếu có) + spec rời hiện tại.
+   Nếu chưa có test → chạy skill `linear-spec-testcase` trước, rồi quay lại gộp.
 
 2. **Đảm bảo page object** cho màn tồn tại trong `src/pages/...` (locator + action, bắt nguồn
-   từ quét Playwright MCP — không bịa selector). Thiếu thì bổ sung như `linear-testcase-gen`.
+   từ quét Playwright MCP — không bịa selector). Thiếu thì bổ sung như `linear-spec-testcase`.
 
 3. **Viết spec 1-test** theo khuôn (xem mẫu thật đã chạy xanh:
    [`tests/regression/orders/order-pending/TC-order-pending.spec.ts`](../../../tests/regression/orders/order-pending/TC-order-pending.spec.ts)):
@@ -142,4 +143,4 @@ HTML + JSON tự-chứa** trong `reports/<màn>/`. Đây là đúng "contract" c
 - Report phải **tự-chứa** (inline CSS, không asset ngoài) như Home để mở offline được.
 - Chỉ một spec 1-test cho mỗi màn; ghi `reports/<màn>/` riêng theo slug màn.
 - Không bịa selector: locator từ page object đã verify bằng Playwright MCP.
-- Nếu màn chưa có test case → chạy `linear-testcase-gen` trước (skill này chỉ **gộp + report**).
+- Nếu màn chưa có test case → chạy `linear-spec-testcase` trước (skill này chỉ **gộp + report**).

@@ -5,8 +5,9 @@ description: >-
   chưa dịch không, (2) có vỡ giao diện (chữ tràn/cắt, tràn ngang) không, và
   (3) dịch ĐÚNG CHUẨN tiếng Việt chưa — bằng cách quét 1 lần tiếng Anh + 1 lần
   tiếng Việt rồi so sánh; nếu sai chuẩn thì đề xuất nên dịch sang từ nào. Đầu vào
-  là TÊN MỘT MÀN HÌNH, đầu ra là MỘT file .md trong docs/i18n/. Dùng khi user nói
-  kiểu "quét tiếng Việt màn <X>", "kiểm tra dịch chuẩn + vỡ UI màn <X>",
+  là TÊN MỘT MÀN HÌNH, đầu ra ghi vào mục "## i18n Notes" của
+  docs/screens/<man-hinh>/<man-hinh>-code-detail.md. Dùng khi user nói kiểu
+  "quét tiếng Việt màn <X>", "kiểm tra dịch chuẩn + vỡ UI màn <X>",
   "scan i18n màn <X>".
 ---
 
@@ -25,20 +26,21 @@ Mục tiêu: với **một màn hình**, trả lời 3 câu hỏi và ghi kết 
   của user. Khoá hợp lệ khai trong `SCREENS` tại [`src/utils/i18nCompare.ts`](../../../src/utils/i18nCompare.ts).
   Nếu user nói tên tiếng Việt/tiếng Anh chưa khớp khoá → map về khoá gần nhất; nếu vẫn mơ hồ → hỏi đúng 1 câu.
 
-## Đầu ra (BẮT BUỘC) — LUỒNG HỢP NHẤT (1 file .md + 1 HTML/màn)
+## Đầu ra (BẮT BUỘC) — LUỒNG HỢP NHẤT (2 file .md chuẩn / màn)
 
-> **Chuẩn mới:** mỗi màn chỉ có **1 file .md master** = `docs/features/<khoá>.md` (gộp tính năng +
-> test case + i18n) và **1 HTML kết quả** = `reports/<khoá>/<khoá>.html`. KHÔNG tạo thêm
-> `-i18n-result.md`, `compare.html`, `i18n-result.html` rời. Luồng code-gen giữ riêng
-> (`codegen-flow/`, `codegen-detail/`).
+> **Chuẩn thư mục:** mỗi màn có đúng 2 file trong `docs/screens/<khoá>/`:
+> `<khoá>-test-cases.md` (feature overview + test case, skill 1+2) và
+> `<khoá>-code-detail.md` (flow map + code detail + i18n, skill 3+4 + skill này). Skill này
+> **KHÔNG tạo file/folder rời** (`docs/i18n/`, `-i18n-result.md`, `compare.html` rời) — chỉ ghi
+> thêm mục "## i18n Notes" vào cuối `<khoá>-code-detail.md`.
 
-- **Ghi kết quả i18n vào PHẦN B của master** `docs/features/<khoá>.md` (mục "Quét Tiếng Việt":
-  B1 còn tiếng Anh · B2 sai chuẩn · B3 đúng chuẩn · B4 UI vỡ). Nếu master chưa có → tạo mới theo
-  mẫu Home ([docs/features/home.md](../../../docs/features/home.md)).
+- **Ghi kết quả i18n vào mục "## i18n Notes"** ở CUỐI `docs/screens/<khoá>/<khoá>-code-detail.md`
+  (B1 còn tiếng Anh · B2 sai chuẩn · B3 đúng chuẩn · B4 UI vỡ). Nếu file chưa có (chưa chạy skill
+  3/4) → tạo mới với frontmatter tối giản rồi thêm mục "## i18n Notes". Giữ nguyên "## Flow Map" /
+  "## Code Detail" nếu đã có.
 - **Dữ liệu thô tự sinh khi chạy:** chỉ `reports/<khoá>/compare.json` (spec `TC-i18n-screen-compare`
   mặc định **chỉ ghi JSON**; bản `compare.html` rời chỉ khi đặt env `I18N_HTML=1` để debug).
-- **KHÔNG** đụng `docs/i18n/<khoá>-translation-map.md` (spec/glossary hạ tầng dùng chung) — chỉ trỏ link.
-- **1 HTML kết quả:** `node scripts/md-to-html.mjs docs/features/<khoá>.md --screen <khoá> --out reports/<khoá>/<khoá>.html`.
+- **1 HTML kết quả:** `node scripts/md-to-html.mjs docs/screens/<khoá>/<khoá>-code-detail.md --screen <khoá> --out reports/<khoá>/<khoá>.html`.
 
 ## Các bước
 
@@ -82,7 +84,8 @@ Mục tiêu: với **một màn hình**, trả lời 3 câu hỏi và ghi kết 
 5. **Đánh giá "chuẩn tiếng Việt".** Với các `suspect` và các chuỗi VI **không có trong glossary**, dùng
    kiến thức tiếng Việt + văn phong POS để phán xét tự nhiên/đúng thuật ngữ chưa; nếu chưa, **đề xuất từ nên dùng**.
    Nguồn chuẩn thuật ngữ = `GLOSSARY` trong [`src/utils/i18nCompare.ts`](../../../src/utils/i18nCompare.ts).
-   Tham chiếu văn cảnh mong đợi ở các doc màn Home: `docs/features/home.md`, `docs/i18n/home-translation-map.md`.
+   Tham chiếu văn cảnh mong đợi ở doc màn Home: `docs/screens/home/home-test-cases.md`,
+   `docs/screens/home/home-code-detail.md` (mục i18n Notes).
 
    > ⚠️ **HIỂU 2 CƠ CHẾ PHÁT HIỆN (bài học VP-2252):** scan chỉ bắt được khi thuật ngữ nằm trong "từ điển":
    >
@@ -102,61 +105,56 @@ dịch "sai chuẩn" mà scan tự động bỏ qua. Với mỗi sub-task còn m
 được (bổ sung nếu thiếu), ghi ID issue vào file kết quả. Bài học VP-2252: 6 bug thật (Sale, Gross/Net
 Income, Net Total, Rate, Pay 1/2) mà lần quét đầu chỉ ra 1 (`Tip`).
 
-6. **Viết `docs/i18n/<khoá>-i18n-result.md`** theo mẫu:
+6. **Ghi mục "## i18n Notes" ở CUỐI `docs/screens/<khoá>/<khoá>-code-detail.md`** theo mẫu (giữ
+   nguyên mọi mục có sẵn phía trên như "## Flow Map" / "## Code Detail"):
 
    ```markdown
-   ---
-   title: Kết quả quét Tiếng Việt — <Tên màn>
-   screen: <khoá>
-   route: <route>
-   scanned-at: <YYYY-MM-DD>
-   source: compare.json + compare.html (TC-i18n-screen-compare)
-   ---
+   ## i18n Notes
 
-   # <Tên màn> — Quét Tiếng Việt / UI vỡ / dịch đúng chuẩn
-
-   ## Tổng quan
-
-   > tổng N · ❌ chưa dịch X · ⚠️ sai chuẩn Y · 📐 UI vỡ Z
+   > tổng N · ❌ chưa dịch X · ⚠️ sai chuẩn Y · 📐 UI vỡ Z · scanned-at: <YYYY-MM-DD>
    > Report trực quan: `reports/<khoá>/compare.html`
 
-   ## 1. ❌ Chưa dịch (còn tiếng Anh)
+   ### 1. ❌ Chưa dịch (còn tiếng Anh)
 
    | Chuỗi (EN) | Đang hiển thị (VI) | Nên dịch | Nguồn (data-tsd-source) |
 
-   ## 2. ⚠️ Dịch chưa đúng chuẩn
+   ### 2. ⚠️ Dịch chưa đúng chuẩn
 
    | Hiện tại (VI) | Gốc (EN) | Nên dùng (chuẩn) | Vì sao |
 
-   ## 3. 📐 Vỡ giao diện (chỉ báo cáo)
+   ### 3. 📐 Vỡ giao diện (chỉ báo cáo)
 
    > tràn ngang …px · các chuỗi bị cắt: …
 
-   ## 4. ✅ Đã dịch đúng (mẫu)
+   ### 4. ✅ Đã dịch đúng (mẫu)
 
-   ## 5. Ghi chú / đề xuất bổ sung glossary
+   ### 5. Ghi chú / đề xuất bổ sung glossary
 
-   ## 6. Nguồn tham chiếu
+   ### 6. Nguồn tham chiếu
 
    > - HTML: `reports/<khoá>/compare.html` · JSON: `reports/<khoá>/compare.json`
    ```
 
-7. **Xuất HTML kèm hình ảnh (BẮT BUỘC).** Render file kết quả `.md` thành HTML tự-chứa có hero screenshot:
+7. **Xuất HTML kèm hình ảnh (BẮT BUỘC).** Render file code-detail `.md` (đã có mục i18n Notes)
+   thành HTML tự-chứa có hero screenshot:
 
    ```bash
-   node scripts/md-to-html.mjs docs/i18n/<khoá>-i18n-result.md --screen <khoá> --out reports/<khoá>/i18n-result.html
+   node scripts/md-to-html.mjs docs/screens/<khoá>/<khoá>-code-detail.md --screen <khoá> --out reports/<khoá>/i18n-result.html
    npm run reports:index
    ```
 
-8. **Cập nhật & báo cáo.** Nếu có `<khoá>-translation-map.md` → thêm dòng trạng thái (ngày + số liệu).
-   Tóm tắt cho user: bao nhiêu chưa dịch, bao nhiêu sai chuẩn (kèm từ đề xuất), có UI vỡ không,
-   **và đường dẫn HTML** (`reports/<khoá>/compare.html` bảng EN↔VI + `reports/<khoá>/i18n-result.html` kèm ảnh).
+8. **Cập nhật & báo cáo.** Tóm tắt cho user: bao nhiêu chưa dịch, bao nhiêu sai chuẩn (kèm từ đề
+   xuất), có UI vỡ không, **và đường dẫn HTML** (`reports/<khoá>/compare.html` bảng EN↔VI +
+   `reports/<khoá>/i18n-result.html` kèm ảnh).
 
 ## Ràng buộc
 
-- Tạo/ghi `.md` trong `docs/i18n/`; HTML kèm ảnh trong `reports/<khoá>/i18n-result.html`. Một lần chạy → một màn.
+- Ghi vào mục "## i18n Notes" của `docs/screens/<khoá>/<khoá>-code-detail.md` — KHÔNG tạo file
+  hay folder rời (`docs/i18n/` không còn tồn tại). MỖI màn chỉ có đúng 2 file trong
+  `docs/screens/<khoá>/`: file này + `<khoá>-test-cases.md`. HTML kèm ảnh trong
+  `reports/<khoá>/i18n-result.html`. Một lần chạy → một màn.
 - KHÔNG tự dịch/sửa source app; skill chỉ **phát hiện + đề xuất**. Việc sửa `t()`/thêm key là do dev.
-- Giọng văn tiếng Việt, có frontmatter — khớp các doc trong `docs/i18n/`.
+- Giọng văn tiếng Việt, có frontmatter — khớp các doc trong `docs/screens/`.
 - `missing` là lỗi thật (gate fail nếu chạy không có `I18N_LENIENT=1`); `suspect` + UI vỡ chỉ báo cáo.
 - Glossary là nguồn sự thật cho "chuẩn tiếng Việt" — mở rộng tại `src/utils/i18nCompare.ts`.
 - File HTML/JSON là **tự sinh** khi chạy test — KHÔNG viết tay. Muốn đổi giao diện report thì sửa

@@ -2,7 +2,7 @@ import { test, expect } from '@fixtures/index';
 import { Tag } from '@/types/testTags';
 import { OWNER_PASSCODE } from '@data/static/staff';
 import { formatUsdFromCents } from '@utils/moneyUtils';
-import { valueAfterLabel } from '@utils/incomeSummaryDetail';
+import { valueAfterLabel } from '@domains/income/incomeSummaryDetail';
 import { openRecentDetail } from '../income-summary/incomeSummary.helpers';
 
 /**
