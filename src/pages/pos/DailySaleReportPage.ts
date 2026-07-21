@@ -31,8 +31,11 @@ const cardToChartKey: Record<ChartCard, ChartKey> = {
  *   left  — header + 4 statistics cards + bar chart
  *   right — date + Print + Orders table + Income/Payment details
  */
+/** `'v1'` is `/incomes/income-daily`; `'v2'` is the parallel `-v2` route under evaluation. */
+export type ReportVariant = 'v1' | 'v2';
+
 export class DailySaleReportPage extends BasePage {
-  protected readonly path = '/incomes/income-daily';
+  protected readonly path: string;
 
   readonly heading: Locator;
   readonly todayButton: Locator;
@@ -43,11 +46,14 @@ export class DailySaleReportPage extends BasePage {
   readonly orderDetailDialogTitle: Locator;
   readonly orderDetailDialogClose: Locator;
 
-  constructor(page: Page) {
+  constructor(page: Page, variant: ReportVariant = 'v1') {
     super(page);
-    // The page title "Daily Sale Report" is rendered as a plain <div>, not a
-    // semantic <heading> — use text selector to find it reliably.
-    this.heading = page.getByText('Daily Sale Report', { exact: true });
+    this.path = variant === 'v2' ? '/incomes/income-daily-v2' : '/incomes/income-daily';
+    // The page title "Daily Sale Report[ V2]" is rendered as a plain <div>, not
+    // a semantic <heading> — use text selector to find it reliably.
+    this.heading = page.getByText(variant === 'v2' ? 'Daily Sale Report V2' : 'Daily Sale Report', {
+      exact: true,
+    });
     this.todayButton = page.getByRole('button', { name: 'Today', exact: true });
     this.printButton = page.getByRole('button', { name: 'Print' });
     // Chart label `<h3>` directly above the bar chart — reflects the active card.

@@ -178,7 +178,6 @@ npx playwright test tests/regression/incomes/income-staff
 - Test/helper + dữ liệu thô JSON: [reports/income-staff/compare.json](../../reports/income-staff/compare.json) · HTML: [reports/income-staff/compare.html](../../reports/income-staff/compare.html).
 - Glossary/registry: [src/utils/i18nCompare.ts](../../src/utils/i18nCompare.ts) (`SCREENS['income-staff']`, `gated:true`).
 
-
 ---
 
 # Appendix — Legacy VP-1402 Staff Income & Staff Payroll Test Cases (Excel-style, merged from docs/test-cases/income-reports/VP-1402-staff-income.md)
@@ -397,3 +396,107 @@ npx playwright test tests/regression/incomes/income-staff
 
 - **Tier 1 (real DB, structural/read-only):** gating passcode, listing đủ cột + sort, search, filter Today/1 ngày/range, mở detail theo từng Compensation, header (tên + ngày + Print) + footer, đối chiếu Total Income listing ↔ detail, hiển thị số âm. → `tests/regression/incomes/staff-income/*.spec.ts` (chưa tạo).
 - **Tier 3 (mocked dataset):** công thức Commission/Salary/Pay 1/Pay 2 với số chính xác + 3 phí khấu trừ ≠ 0; cùng các bug candidate #1–#4. → cần mock query Staff Income/Payroll (chờ data mẫu — ⚠️ #5).
+
+---
+
+## A5. Quét toàn bộ staff trong 1 tháng (MCP Playwright, dữ liệu thật, 2026-07-21)
+
+> Phạm vi quét theo yêu cầu: đổi filter sang **"Last 30 Days"** (`06/22/2026 - 07/21/2026`, tương đương preset "1 tháng" — combobox không có sẵn nhãn "Month" riêng, dùng "Last 30 Days"), quét **6 thẻ tổng** + **click vào từng dòng staff** trong bảng, với staff có nhiều order thì kiểm tra cách bảng order hiển thị hết (không phân trang).
+
+### Tổng quan toàn shop (Last 30 Days)
+
+| Chỉ số             | Giá trị    |
+| ------------------ | ---------- |
+| Total staff        | 15         |
+| Total orders       | 319        |
+| Total subtotal     | $16,046.40 |
+| Total supply fee   | $250.00    |
+| Total tip          | $1,149.66  |
+| Total staff income | $32,226.28 |
+
+### Danh sách 15 staff (click từng dòng, ghi nhận Salary Type thật của từng người)
+
+| Staff    | Orders  | Subtotal  | Supply Fee | Tip     | Total Income | Compensation mode xác nhận                                                              |
+| -------- | ------- | --------- | ---------- | ------- | ------------ | --------------------------------------------------------------------------------------- |
+| Wendy    | 5       | $520.00   | $1.00      | $80.00  | $222.00      | Salary — **Wage Per Day**                                                               |
+| Vincent  | 9       | $754.00   | $14.00     | $246.00 | $523.19      | **Commission**                                                                          |
+| Val      | 14      | $781.90   | $25.00     | $0.00   | $450.00      | (chưa mở panel — Total Income tách biệt Subtotal ⇒ khả năng Salary)                     |
+| trinehhh | 1       | $140.00   | $0.00      | $20.00  | $20.00       | Commission (đã xác nhận ở phiên trước)                                                  |
+| Tony     | 14      | $1,161.00 | $48.00     | $80.11  | $1,328.58    | (chưa mở — pattern giống Salary do Total Income >> Subtotal)                            |
+| Ryan     | 12      | $612.00   | $3.00      | $98.00  | $366.58      | Salary — **Wage Per Hour**                                                              |
+| Mai      | 15      | $1,222.00 | $23.00     | $0.00   | $9,816.62    | Salary (Total Income rất lớn so với Subtotal ⇒ Salary by Period rate cao)               |
+| Linda    | 8       | $584.00   | $15.00     | $80.56  | $1,328.95    | Salary (pattern giống Tony/Kevin)                                                       |
+| Kevin    | **186** | $6,355.00 | $18.00     | $277.50 | $4,634.13    | Salary — **Salary by Period** (nhiều order nhất — xem mục "Staff nhiều order" bên dưới) |
+| Jackie   | 9       | $1,910.00 | $43.00     | $147.00 | $812.66      | Commission (đã xác nhận ở phiên trước)                                                  |
+| Hugo     | 11      | $240.00   | $5.00      | $0.00   | $68.45       | Commission (đã xác nhận ở phiên trước)                                                  |
+| Evon     | 14      | $458.00   | $15.00     | $0.00   | $4,551.98    | Salary (Total Income >> Subtotal)                                                       |
+| Bob      | 9       | $728.50   | $16.00     | $60.49  | $456.14      | chưa mở                                                                                 |
+| Annie    | 6       | $310.00   | $12.00     | $0.00   | $7,490.00    | Salary (Total Income >> Subtotal)                                                       |
+| Andy     | 6       | $270.00   | $12.00     | $60.00  | $157.00      | chưa mở                                                                                 |
+
+> Đủ 3/3 sub-mode Salary đã xác nhận trực tiếp qua panel chi tiết: **Wage Per Day** (Wendy), **Wage Per Hour** (Ryan), **Salary by Period** (Kevin) — cộng **Commission** (Vincent/trinehhh/Jackie/Hugo). Các staff còn lại (Val/Tony/Mai/Linda/Evon/Bob/Annie/Andy) suy luận qua chênh lệch Subtotal vs Total Income nhưng **chưa click mở panel** — nên mở thêm nếu cần verify công thức chính xác từng người (không phải blocker vì mục tiêu chính — phủ đủ 3 loại Salary + Commission — đã đạt).
+
+### Chi tiết 3 loại Salary + Commission (copy nguyên văn từ panel)
+
+**1. Wage Per Day — Wendy** (5 order, Working Days: 1):
+
+- Sale $520.00 / Refund $0.00 / Subtotal $520.00
+- Salary Type: **Wage Per Day**, Rate: $150.00
+- Gross Income _(Rate × Working Days)_: $150.00
+- Clean Up Fee/Deduction: $8.00 · Tip: $80.00 · Card Charge Tip: $0.00
+- **Total Income** _(Gross Income − Clean Up Fee + Tip − Card Charge Tip)_: $222.00
+- Pay 1 _(Gross Income × 40% − Clean Up Fee − Card Charge Tip)_: $52.00
+- Pay 2 _(Gross Income × 60% + Tip)_: $170.00
+
+**2. Wage Per Hour — Ryan** (12 order, Working Hours: 60.92):
+
+- Sale $784.00 / Refund -$172.00 / Subtotal $612.00
+- Salary Type: **Wage Per Hour**, Rate: $5.00
+- Gross Income _(Rate × Working Hours)_: $304.58
+- Clean Up Fee/Deduction: $36.00 · Tip: $98.00 · Card Charge Tip: $0.00
+- **Total Income**: $366.58 · Pay 1: $40.14 · Pay 2: $326.44
+
+**3. Salary by Period — Kevin** (186 order, Working Days: 13):
+
+- Sale $6,656.00 / Refund -$301.00 / Subtotal $6,355.00
+- Salary Type: **Salary by Period**, Rate hiển thị **"-"** (rate thay đổi giữa kỳ, xem breakdown theo sub-kỳ bên dưới)
+- **Rate đổi giữa chừng trong 1 tháng** (điểm quan trọng khi quét khoảng dài): Rate (06/22–07/08): $0.00 · Rate (07/09–07/13): $400.00 · Rate (07/14–07/20): $285.71 · Rate (07/21): $666.66
+- Gross Income _(Fixed salary for this period)_: $4,666.66 (tổng các sub-kỳ)
+- Clean Up Fee/Deduction: $260.00 · Tip: $277.50 · Card Charge Tip: $50.00
+- **Total Income**: $4,634.16 · Pay 1: $2,023.30 · Pay 2: $2,610.86
+
+**4. Commission — Vincent** (9 order):
+
+- Sale $864.00 / Refund -$110.00 / Subtotal $754.00 / Supply Fee $14.00
+- Staff Commission _((Subtotal − Supply Fee) × Rate)_: $464.80
+- **Commission Rate cũng đổi theo sub-kỳ trong khoảng quét**: 60% (06/22–06/24), 60% (06/25–06/27), **80%** (06/28–06/29), 60% (06/30), 60% (07/01–07/08, 07/09–07/13, 07/14–07/20, 07/21)
+- Card Charge Commission: $47.21 · Clean Up Fee: $70.00 · Discount Charge: $48.00 · Tip: $246.00 · Card Charge Tip: $22.40
+- **Total Income**: $523.19
+- Pay 1 Rate cũng đổi theo sub-kỳ (30% hầu hết, 50% trong 06/28–06/29) → Pay 1: **-$31.53** (âm, do Clean Up/Discount/Card Charge lớn hơn phần Commission × Pay 1 Rate)
+- Pay 2 Rate: 70% (50% trong 06/28–06/29) → Pay 2: $554.72
+
+> **Phát hiện quan trọng khi quét khoảng dài (1 tháng) thay vì 1 ngày:** nếu Rate/Commission Rate/Pay 1 Rate/Pay 2 Rate của staff **thay đổi giữa chừng trong khoảng ngày đang xem**, panel chi tiết **tự tách thành nhiều dòng "Rate (từ ngày - đến ngày): giá trị"** thay vì 1 giá trị Rate duy nhất — đây là hành vi KHÔNG xuất hiện khi quét theo Today/1 ngày (đã quét trước đó), nên các test case cũ (TC-IST/TC-SI) set-điều-kiện đơn Rate sẽ **cần bổ sung case multi-period-rate** khi test theo khoảng ngày dài.
+
+### Staff nhiều order — Kevin (186 order)
+
+- Bảng order riêng của Kevin có **toàn bộ 186 dòng render 1 lần trong DOM** (đếm được 205 `<tr>` kể cả header/phần khác) — **không có nút "Show more"/phân trang/virtualization** ở panel chi tiết Staff Income (khác với Income Summary có nút "Show more/Show less" cho bảng theo kỳ).
+- Ý nghĩa cho test tự động: khi staff có nhiều order, **`browser_snapshot`/DOM query lấy đủ hết order** mà không cần scroll-and-reload hay click "load more" — chỉ cần `scrollThroughPage()` để đảm bảo lazy-render (nếu có) đã mount, không cần logic phân trang riêng.
+- Rủi ro hiệu năng: nếu số order lên tới hàng nghìn, render toàn bộ không phân trang có thể chậm — chưa đo được vì dataset hiện tại tối đa 186.
+
+## A6. Đối chiếu Staff Income ↔ Staff Settings — Compensation (xác nhận cấu trúc salary giống hệt)
+
+Quét `/settings/staffs/<id>` → tab **Compensation** (vd. Ryan) xác nhận UI setting dùng **đúng cấu trúc 2 tầng** như Staff Income hiển thị:
+
+```
+Commission
+Commission + Salary
+  └─ Salary Setting
+       ├─ Salary by Period
+       ├─ Wage Per Day
+       └─ Wage Per Hour
+```
+
+- Toggle gốc: **Commission** hoặc **Commission + Salary** (không có "chỉ Salary" độc lập — luôn đi kèm Commission Setting bên dưới dù staff chọn Commission + Salary).
+- Khi chọn **Commission + Salary**, mở thêm khối **Salary Setting** với 3 lựa chọn con: **Salary by Period / Wage Per Day / Wage Per Hour** — đúng 3 loại đã quan sát được trên Staff Income (Kevin=Salary by Period, Wendy=Wage Per Day, Ryan=Wage Per Hour).
+- Ngoài ra Compensation còn có: Commission Setting (For Service/Product/Gift Card — % Staff/Owner), Pay 1 - Pay 2 (%), Deduction Per Day (USD), Card Fee Charge (On Staff Commission %, On Credit Card Tip % + toggle "Add credit card tips to staff paycheck"), Staff Days Off Setting (Limit days off, Max days off allowed, Days not allowed to be off theo thứ), toggle **Exclude Tips From Cash/Check Income**.
+- **Kết luận:** cấu trúc "Commission + Salary gồm Salary by Period / Wage Per Day / Wage Per Hour" ở Staff Settings **khớp hoàn toàn** với 3 sub-mode Salary Type quan sát được ở panel chi tiết Staff Income — không có mode thứ 4 hay khác biệt nào giữa 2 màn.

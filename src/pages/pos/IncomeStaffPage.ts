@@ -39,8 +39,11 @@ const SHOP_TZ = shopTimezone(process.env.SHOP);
  * Like the other Income reports the route is passcode-gated and selectors lean
  * on visible text because Volt POS hasn't adopted `data-testid`.
  */
+/** `'v1'` is `/incomes/income-staff`; `'v2'` is the parallel `-v2` route under evaluation. */
+export type ReportVariant = 'v1' | 'v2';
+
 export class IncomeStaffPage extends BasePage {
-  protected readonly path = '/incomes/income-staff';
+  protected readonly path: string;
 
   readonly heading: Locator;
   readonly searchInput: Locator;
@@ -50,10 +53,13 @@ export class IncomeStaffPage extends BasePage {
   readonly emptyResults: Locator;
   readonly noDetail: Locator;
 
-  constructor(page: Page) {
+  constructor(page: Page, variant: ReportVariant = 'v1') {
     super(page);
-    // "Staff Income" title renders as a plain <div>, not a semantic heading.
-    this.heading = page.getByText('Staff Income', { exact: true });
+    this.path = variant === 'v2' ? '/incomes/income-staff-v2' : '/incomes/income-staff';
+    // "Staff Income[ V2]" title renders as a plain <div>, not a semantic heading.
+    this.heading = page.getByText(variant === 'v2' ? 'Staff Income V2' : 'Staff Income', {
+      exact: true,
+    });
     this.searchInput = page.getByRole('textbox', { name: 'Search staff' });
     // The preset/period dropdown is the first combobox in the filter bar.
     this.periodDropdown = page.getByRole('combobox').first();
