@@ -74,7 +74,7 @@ export default defineConfig({
       // same deterministic mismatch, so keep retries off regardless of CI.
       name: 'no-retry',
       testIgnore: '**/tests/api/**',
-      testMatch: ['**/tests/regression/i18n/**', '**/*report*/**'],
+      testMatch: ['**/tests/regression/i18n/**/*.spec.ts', '**/*report*/**/*.spec.ts'],
       retries: 0,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
     },

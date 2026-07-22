@@ -175,6 +175,71 @@ export class IncomeStaffPage extends BasePage {
     await expect(this.printButton).toBeVisible({ timeout: 10_000 });
   }
 
+  // ------------------------------------------------------- detail panel
+
+  /**
+   * Reads the per-staff detail panel (right side, opened via {@link openStaffDetail}):
+   * the staff's own order table (columns vary — Commission layout has
+   * Order #/Sale-Refund/Supply/Tip, Salary layout has Order #/Sale-Refund/Tip)
+   * plus every label/value row below it (Clock In/Working Days/Sale/Subtotal/
+   * Salary Type/Rate/Gross Income/Staff Commission/Commission Rate/Clean Up
+   * Fee/Tip/Card Charge.../Total Income/Pay 1/Pay 2, ...). Generic scraping (no
+   * fixed field list) so it works unmodified for BOTH the salary and
+   * commission layouts described in
+   * docs/screens/income-reports-v2/income-reports-v2-comparison.md §3.
+   */
+  async readStaffDetailPanel(): Promise<{
+    orders: Array<Record<string, string>>;
+    fields: Array<{ label: string; value: string }>;
+  }> {
+    return this.page.evaluate(() => {
+      const panel =
+        Array.from(document.querySelectorAll('div')).find(
+          (d) =>
+            /Print/.test(d.textContent || '') &&
+            /Total Income/.test(d.textContent || '') &&
+            d.querySelectorAll('*').length < 800,
+        ) ?? document.body;
+
+      const orderTable = panel.querySelector('table');
+      const orders: Array<Record<string, string>> = [];
+      if (orderTable) {
+        const headers = Array.from(
+          orderTable.querySelectorAll('thead th, thead [role="columnheader"]'),
+        ).map((h) => (h.textContent || '').trim());
+        const rows = Array.from(orderTable.querySelectorAll('tbody tr'));
+        for (const row of rows) {
+          const cells = Array.from(row.querySelectorAll('td, [role="cell"]')).map((c) =>
+            (c.textContent || '').trim(),
+          );
+          const rec: Record<string, string> = {};
+          headers.forEach((h, i) => {
+            rec[h || `col${i}`] = cells[i] ?? '';
+          });
+          orders.push(rec);
+        }
+      }
+
+      const fields: Array<{ label: string; value: string }> = [];
+      const seen = new Set<Element>();
+      for (const el of Array.from(panel.querySelectorAll('*'))) {
+        if (el.tagName === 'TABLE' || el.closest('table')) continue;
+        if (!/justify-between/.test((el as HTMLElement).className || '')) continue;
+        const kids = el.children;
+        if (kids.length < 2) continue;
+        const value = (kids[kids.length - 1].textContent || '').trim();
+        if (!/^-?\$/.test(value)) continue;
+        if (el.querySelector('[class*="justify-between"]')) continue;
+        if (seen.has(el)) continue;
+        seen.add(el);
+        const label = (kids[0].textContent || '').replace(/\s+/g, ' ').trim();
+        if (!label || /\$/.test(label)) continue;
+        fields.push({ label, value });
+      }
+      return { orders, fields };
+    });
+  }
+
   // ----------------------------------------------------- loading / error / empty
 
   /** True when the "No results found." empty state is shown. */

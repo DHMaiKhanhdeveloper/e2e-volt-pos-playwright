@@ -120,6 +120,34 @@ export async function scrapeOrderRow(row: Locator): Promise<{
   };
 }
 
+/**
+ * Reads every row's 5 cells in a single DOM pass. A per-row `textContent()`
+ * loop (one round-trip per cell per row) is fine for a single day's orders
+ * but far too slow once the table holds a month's worth — this scrapes the
+ * whole `tbody` in one `evaluate` call instead.
+ */
+export async function scrapeAllOrderRows(
+  table: Locator,
+): Promise<Array<{ orderCode: string; sale: string; tip: string; tax: string; total: string }>> {
+  const isVisible = await table.isVisible().catch(() => false);
+  if (!isVisible) return [];
+  return table.evaluate((tableEl) => {
+    const rows = Array.from(tableEl.querySelectorAll('tbody tr'));
+    return rows.map((tr) => {
+      const cells = Array.from(tr.querySelectorAll('td, [role="cell"]')).map((c) =>
+        (c.textContent ?? '').trim(),
+      );
+      return {
+        orderCode: cells[0] ?? '',
+        sale: cells[1] ?? '',
+        tip: cells[2] ?? '',
+        tax: cells[3] ?? '',
+        total: cells[4] ?? '',
+      };
+    });
+  });
+}
+
 /** Converts a raw scraped row into typed cents, matching the orderCode format. */
 export function toOrderMoneyRow(
   orderCode: string,

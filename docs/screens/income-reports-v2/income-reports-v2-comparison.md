@@ -211,6 +211,100 @@ Click 1 staff → mở panel chi tiết bên phải (`staffId` gắn vào URL). 
 
 Đã quét đối chiếu cả **layout salary (Kevin)** và **layout commission (trinehhh)** — tất cả field, công thức, giá trị **giống hệt nhau** giữa `income-staff` và `income-staff-v2`. Không phát hiện sai lệch.
 
+### 3.1 Bảng phân tích chi tiết TỪNG staff (panel bên phải) — ngày 07/21/2026, cả 8 staff
+
+> Quét lại bằng MCP Playwright trên `income-staff` (Yesterday = 07/21/2026), click từng dòng trong bảng 8 staff và chụp toàn bộ panel chi tiết bên phải. Route V2 (`income-staff-v2`) đối chiếu bằng code (mục "Code đã sinh" bên dưới) chứ không quét tay lặp lại — kết quả tay ở đây dùng làm "nguồn sự thật" để viết assertion.
+
+**Tổng hợp phân loại 8 staff của ngày này:**
+
+| Staff    | Orders | Loại panel | Salary subtype    | Rate ngày 07/21/2026 |
+| -------- | ------ | ---------- | ----------------- | -------------------- |
+| trinehhh | 1      | Commission | –                 | 10.1%                |
+| Val      | 2      | Salary     | Wage Per Day      | $80.00/ngày          |
+| Mai      | 0      | Salary     | Salary by Period  | $466.66              |
+| Linda    | 1      | Salary     | **Wage Per Hour** | $30.00/giờ           |
+| Kevin    | 1      | Salary     | Salary by Period  | $666.66              |
+| Jackie   | 1      | Salary     | Wage Per Day      | $120.00/ngày         |
+| Evon     | 0      | Salary     | Salary by Period  | $233.33              |
+| Annie    | 0      | Salary     | Salary by Period  | $350.00              |
+
+Vậy chỉ riêng ngày 07/21/2026 đã có đủ **4 biến thể pay-type/subtype** trên cùng 1 ngày: Commission (trinehhh), Wage Per Day (Val, Jackie), Wage Per Hour (Linda), Salary by Period (Mai, Kevin, Evon, Annie).
+
+**C0. trinehhh — Commission** (đã có ở mục 3 phía trên, không lặp lại).
+
+**C1. Val — Salary, Wage Per Day:**
+
+- Bảng order riêng: `Order #` / `Sale/Refund` / `Tip` — 2 dòng: `OD260721-27339767` ($22.00 / $8.00), `OD260721-27254727` ($60.50 / $5.00)
+- Clock In: `-`, Clock Out: `-`, Working Days: **0**
+- Sale $82.50 / Refund $0.00 / Subtotal $82.50
+- Salary Type: Wage Per Day, Rate: $80.00
+- Gross Income _(Rate × Working Days)_: **$0.00** ⚠️ (Working Days = 0 dù có 2 order trong ngày → Gross Income luôn $0, xem ghi chú bên dưới)
+- Clean Up Fee/Deduction: $0.00
+- Tip: **$0.00** ⚠️ (2 order cộng lại có tip $8.00 + $5.00 = $13.00 nhưng panel hiển thị $0.00 — cùng hiện tượng "Tip trong panel không khớp tổng tip của các order" như ghi chú Working Days ở mục 4.3)
+- Card Charge Tip: $0.00
+- **Total Income** _(Gross Income − Clean Up Fee + Tip − Card Charge Tip)_: $0.00
+- Pay 1 _(Gross Income × 20% − Clean Up Fee − Card Charge Tip)_: $0.00
+- Pay 2 _(Gross Income × 80% + Tip)_: $0.00
+
+**C2. Mai — Salary, Salary by Period (không có order trong ngày):**
+
+- Bảng order: trống — hiển thị "No data available / No orders found for the selected date."
+- Clock In: `-`, Clock Out: `-`, Working Days: 1
+- Sale $0.00 / Refund $0.00 / Subtotal $0.00
+- Salary Type: Salary by Period, Rate: $466.66
+- Gross Income _(Fixed salary for this period)_: $466.66
+- Clean Up Fee/Deduction: $15.00
+- Tip: $0.00, Card Charge Tip: $0.00
+- **Total Income**: $451.66 → Pay 1 _(Gross Income × 35% − Clean Up Fee − Card Charge Tip)_: $148.33 / Pay 2 _(Gross Income × 65% + Tip)_: $303.33
+
+**C3. Linda — Salary, Wage Per Hour (subtype mới chưa có ví dụ chi tiết trước đây):**
+
+- Bảng order riêng: `Order #` / `Sale/Refund` / `Tip` — 1 dòng: `OD260721-25951760` ($140.00 / $20.00)
+- Clock In: `-`, Clock Out: `-`, **Working Hours**: 0 _(nhãn field khác Wage Per Day/Salary — đúng là "Working Hours" chứ không phải "Working Days")_
+- Sale $140.00 / Refund $0.00 / Subtotal $140.00
+- Salary Type: Wage Per Hour, Rate: $30.00
+- Gross Income _(Rate × Working Hours)_: $0.00 (Working Hours = 0)
+- Clean Up Fee/Deduction: $0.00
+- Tip: $20.00 (ở đây Tip trong panel KHỚP với tip của order duy nhất, khác trường hợp Val có 2 order)
+- Card Charge Tip: $0.00
+- **Total Income** _(Gross Income − Clean Up Fee + Tip − Card Charge Tip)_: $20.00
+- Pay 1 _(Gross Income × 25% − Clean Up Fee − Card Charge Tip)_: $0.00
+- Pay 2 _(Gross Income × 75% + Tip)_: $20.00
+
+**C4. Kevin — Salary, Salary by Period** (đã có ở mục "C1. Layout salary" phía trên — khớp 100% với lần quét này).
+
+**C5. Jackie — Salary, Wage Per Day:**
+
+- Bảng order riêng: 1 dòng `OD260721-26073632` ($140.00 / $20.00)
+- Clock In: `-`, Clock Out: `-`, Working Days: 0
+- Sale $140.00 / Refund $0.00 / Subtotal $140.00
+- Salary Type: Wage Per Day, Rate: $120.00
+- Gross Income _(Rate × Working Days)_: $0.00
+- Clean Up Fee/Deduction: $0.00
+- Tip: $20.00 (khớp tip order duy nhất — khác Val vốn có 2 order)
+- Card Charge Tip: $0.00
+- **Total Income**: $20.00 → Pay 1 _(Gross Income × 40% − Clean Up Fee − Card Charge Tip)_: $0.00 / Pay 2 _(Gross Income × 60% + Tip)_: $20.00
+
+**C6. Evon — Salary, Salary by Period (0 order):**
+
+- Bảng order: trống
+- Clock In: `-`, Clock Out: `-`, Working Days: 1
+- Sale/Refund/Subtotal đều $0.00
+- Salary Type: Salary by Period, Rate: $233.33
+- Gross Income: $233.33, Clean Up Fee/Deduction: $12.00, Tip: $0.00, Card Charge Tip: $0.00
+- **Total Income**: $221.33 → Pay 1: $104.66 / Pay 2: $116.67
+
+**C7. Annie — Salary, Salary by Period (0 order):**
+
+- Bảng order: trống
+- Clock In: `-`, Clock Out: `-`, Working Days: 1
+- Sale/Refund/Subtotal đều $0.00
+- Salary Type: Salary by Period, Rate: $350.00
+- Gross Income: $350.00, Clean Up Fee/Deduction: $7.00, Tip: $0.00, Card Charge Tip: $0.00
+- **Total Income**: $343.00 → Pay 1: $168.00 / Pay 2: $175.00
+
+⚠️ **Ghi chú nghiệp vụ mới phát hiện — "Tip trong panel không luôn khớp tổng tip của các order hiển thị ngay bên trên":** với staff có ĐÚNG 1 order trong ngày (Linda, Jackie, Kevin, trinehhh), field Tip trong panel luôn khớp đúng tip của order đó. Nhưng với **Val** (2 order, tip $8.00 + $5.00 = $13.00), field Tip trong panel lại hiển thị **$0.00**, không phải $13.00. Cùng lúc, Gross Income của Val cũng bị tính $0.00 do Working Days = 0. Cả 2 field cùng "về 0" gợi ý: khi Working Days/Working Hours = 0 (staff Salary chưa "chấm công" chính thức cho kỳ này dù có order), backend có thể đang chặn/zero-hoá toàn bộ nhánh tính lương salary (gồm cả Tip) thay vì chỉ Gross Income — cần xác nhận lại với đội backend đây là hành vi đúng theo thiết kế ("chỉ tính lương khi có Working Days > 0") hay là bug tính thiếu Tip khi Working Days = 0.
+
 ---
 
 ## 4. Staff Income — Quét mở rộng 1 tháng, toàn bộ staff & pay-type
@@ -308,6 +402,25 @@ Cả 4 biến thể pay-type (Commission, Wage Per Day, Wage Per Hour, Salary by
 - **Daily Sale Report (`income-daily`)** với `?from=1782882000&to=1784696399`: URL tự thêm `activeChart=sale` nhưng **màn hình chỉ hiển thị dữ liệu của đúng 1 ngày `07/01/2026` (tức ngày `from`)** — header hiển thị "07/01/2026" chứ không phải range, Total Order = 6, Sale = $427.50, Total tip = $72.00, Total Payment = $499.50. → **Daily Sale Report không hỗ trợ quét theo range nhiều ngày**, nó luôn dùng `from` làm ngày đơn lẻ, bất kể `to` khác `from` bao xa. Đây là hành vi đúng theo tên gọi "Daily" nhưng cần lưu ý khi truyền `to` khác `from` vào URL sẽ không có tác dụng gì trên màn này.
 - **Income Summary (`income-summary`)** với cùng range: hỗ trợ đúng range tháng — header hiển thị "Total Income Jul 01, 2026 - Jul 21, 2026: $10,767.20". Con số này **không bằng** "Total subtotal" $10,302.40 của Staff Income cho cùng range — nhưng đây là khác biệt kỳ vọng vì 2 field có định nghĩa khác nhau (Total Income ở Summary tính theo Sale gộp Net/Gross khác công thức Subtotal ở Staff Income, vốn là Sale − Refund riêng theo từng staff), không phải sai lệch cần sửa.
 
+## Kết quả chạy 30-ngày gần nhất (2026-07-22)
+
+Chạy `TC-income-reports-v2-compare.spec.ts` (đã bổ sung drill-down per-staff detail panel cho TC-IRV2-3, xem mục "Code đã sinh") toàn bộ 30 ngày (2026-06-23 → 2026-07-22), report tại [`reports/income-reports-v2/compare-latest.html`](../../../reports/income-reports-v2/compare-latest.html) (bản snapshot theo ngày: `compare-2026-07-22.html`). Report **đầy đủ 90/90 phần** (30 ngày × 3 màn hình) sau khi chạy bù lại TC-IRV2-3 lần 2 (lần đầu dừng sớm ở ngày 2026-07-07 do dev server tạm ngưng — xem log bên dưới).
+
+- **3943 rows** so sánh trên **30/30 ngày**, **272 rows lệch** (mismatch + missing-in-one-side).
+- **TC-IRV2-1 (Daily Sale Report)**: PASS toàn bộ 30 ngày — không lệch.
+- **TC-IRV2-2 (Income Summary)**: FAIL như kỳ vọng — vẫn đúng bug đã biết ở §2 (Sale Details / Salon Earnings mất Service Sale/Refund, Clean Up Fee, Staff Salary ở V2), lặp lại ở mọi ngày có dữ liệu.
+- **TC-IRV2-3 (Staff Income + per-staff detail panel mới)**: nay đã có đủ part cho cả 30/30 ngày. Toàn bộ 30 ngày đều FAIL soft-assertion ở mức "Total staff income"/`totalIncome` từng staff — lệch nhỏ, dạng rounding (ví dụ 2026-06-24: Vincent $166.53 vs $154.53, Jackie $108.16 vs $113.94; các ngày khác lệch tương tự vài đô/staff) — **cùng dạng sai lệch rounding đã ghi nhận ở mục 4.2** (Kevin lệch $0.03 giữa bảng tổng và panel chi tiết), nhưng ở đây là **giữa V1 và V2** chứ không phải giữa bảng tổng và panel chi tiết trong cùng 1 bản. Đây là **phát hiện mới**: sai lệch rounding nhỏ giữa V1/V2 xuất hiện ở HẦU HẾT các ngày có staff salary, mức lệch thường vài đô-la trên mỗi staff — cần đội backend kiểm tra logic làm tròn giữa 2 phiên bản tính lương salary, khác hẳn với mức độ "giống hệt 100%" đã kết luận ở các lần quét tay trước đó (§3, §4.4) vốn chỉ test 1-2 ngày mẫu cụ thể chứ chưa quét đủ 30 ngày liên tiếp.
+- **Log kỹ thuật của lần chạy bù**: lần chạy TC-IRV2-3 đầu tiên bị dừng ở ngày 2026-07-07 vì `net::ERR_CONNECTION_REFUSED` (dev server `localhost:1420` tạm thời không phản hồi, không phải lỗi code) — chạy lại riêng `TC-income-reports-v2-compare.spec.ts:240` sau khi server lên lại đã lấp đầy 14 ngày còn thiếu (2026-06-23 → 2026-07-06) mà không xoá dữ liệu 2 test kia (parts trên đĩa không bị test:3 wipe, chỉ TC-IRV2-1 wipe `.parts` lúc đầu file).
+
+## Quy trình cho các lần chạy sau
+
+> Từ nay, **mỗi lần chạy lại** bộ so sánh V1/V2 (chạy spec, quét tay bằng MCP Playwright, hoặc quét mở rộng ngày/tháng) đều phải **cập nhật lại chính file này** (`docs/screens/income-reports-v2/income-reports-v2-comparison.md`) với kết quả mới nhất, thay vì chỉ báo cáo trong chat:
+>
+> - Cập nhật ngày quét, số liệu, và bảng "Kết luận nhanh" nếu có thay đổi so với lần trước.
+> - Nếu phát hiện bug mới hoặc bug cũ đã được fix, cập nhật mục "Bug tìm thấy" tương ứng (đánh dấu đã fix, không xoá lịch sử — có thể ghi chú "Đã fix ngày ..." bên dưới).
+> - Nếu chạy quét theo dải ngày (ví dụ 30 ngày dùng `compare-latest.html`), ghi tóm tắt kết quả (bao nhiêu ngày pass/fail, ngày nào phát sinh sai lệch mới) vào một mục con trong file này, kèm đường dẫn tới report HTML tương ứng trong `reports/income-reports-v2/`.
+> - Giữ nguyên các phần lịch sử phía trên (không xoá), chỉ thêm/chỉnh phần liên quan để file luôn phản ánh đúng trạng thái mới nhất.
+
 ## Ghi chú kỹ thuật khi quét (cho lần chạy sau)
 
 - Cả 6 route đều bị `PermissionProtectedRoute` chặn bằng passcode dialog (`8888`) — phải nhập passcode trước khi snapshot thấy nội dung thật.
@@ -330,7 +443,7 @@ Cả 4 biến thể pay-type (Commission, Wage Per Day, Wage Per Hour, Salary by
 - **Spec** — [`TC-income-reports-v2-compare.spec.ts`](../../../tests/regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts), 3 test case:
   - **TC-IRV2-1**: Daily Sale Report v1 vs v2 — stat cards, Income/Payment Details, order rows.
   - **TC-IRV2-2**: Income Summary v1 vs v2 — Payment Details/Supply Fee/Staff Payout (kỳ vọng khớp) + **Sale Details**/**Salon Earnings** viết dưới dạng assertion so sánh bằng thật (không phải assertion "phải khác"), nên **sẽ FAIL cho tới khi bug ở mục "Bug tìm thấy" (§2) được fix**, lúc đó tự chuyển xanh mà không cần sửa lại test.
-  - **TC-IRV2-3**: Staff Income v1 vs v2 — 6 field thẻ thống kê tổng shop + toàn bộ dòng bảng staff.
+  - **TC-IRV2-3**: Staff Income v1 vs v2 — 6 field thẻ thống kê tổng shop + toàn bộ dòng bảng staff + (mới) drill-down panel chi tiết của MỖI staff xuất hiện trong ngày đó (`IncomeStaffPage.readStaffDetailPanel()` — quét order sub-table + toàn bộ field label/value, tự thích ứng cả layout salary lẫn commission mà không cần biết trước field nào tồn tại).
 
 Câu lệnh chạy (xem thêm `docs/test-commands.md`):
 
@@ -350,4 +463,6 @@ npx playwright test tests/regression/incomes/income-reports-v2/TC-income-reports
 npx playwright test tests/regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts:110  # TC-IRV2-3: Staff Income
 ```
 
-**Chưa tự động hoá** (ngoài phạm vi lần gen này): phần 4 của document (quét mở rộng 1 tháng theo từng staff, drill-down panel chi tiết Staff Income cho Kevin/trinehhh, sai lệch rounding $0.03) — mới chỉ có so sánh ở tầm bảng liệt kê + thẻ thống kê cho Staff Income, chưa có code đọc panel chi tiết per-staff (salary/commission layout) như đã có sẵn cho Income Summary (`readDetailSections`).
+**Đã tự động hoá thêm (lần cập nhật 2026-07-22):** `IncomeStaffPage.readStaffDetailPanel()` — tương đương `readDetailSections()` của Income Summary nhưng generic hơn (không cần khai báo trước danh sách field), đọc cả order sub-table lẫn mọi field label/value trong panel chi tiết Staff Income. TC-IRV2-3 giờ mở panel chi tiết của MỌI staff xuất hiện trong ngày (cả v1 lẫn v2) và so khớp toàn bộ, thay vì chỉ so bảng liệt kê + thẻ thống kê như trước.
+
+**Vẫn chưa tự động hoá:** phần 4 của document (quét mở rộng 1 tháng theo từng staff, sai lệch rounding $0.03 của Kevin) — chỉ mới có bằng tay, chưa viết thành assertion Playwright (khoảng ngày dài làm chi phí quét quá lớn cho CI thường xuyên).

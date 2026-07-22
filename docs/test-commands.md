@@ -488,9 +488,9 @@ npx playwright test regression/incomes/income-reports-v2/TC-income-reports-v2-co
 
 | #   | Test case                                                                                                                   | Command                                                                                             |
 | --- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 1   | Income Reports V2 — V1 vs V2 parity @regression › TC-IRV2-1: Daily Sale Report v1 vs v2 match                               | `npx playwright test regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts:25`  |
-| 2   | Income Reports V2 — V1 vs V2 parity @regression › TC-IRV2-2: Income Summary v1 vs v2 — Sale Details / Salon Earnings parity | `npx playwright test regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts:70`  |
-| 3   | Income Reports V2 — V1 vs V2 parity @regression › TC-IRV2-3: Staff Income v1 vs v2 — stat bar + staff table match           | `npx playwright test regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts:110` |
+| 1   | Income Reports V2 — V1 vs V2 parity @regression › TC-IRV2-1: Daily Sale Report v1 vs v2 match                               | `npx playwright test regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts:56`  |
+| 2   | Income Reports V2 — V1 vs V2 parity @regression › TC-IRV2-2: Income Summary v1 vs v2 — Sale Details / Salon Earnings parity | `npx playwright test regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts:123` |
+| 3   | Income Reports V2 — V1 vs V2 parity @regression › TC-IRV2-3: Staff Income v1 vs v2 — stat bar + staff table match           | `npx playwright test regression/incomes/income-reports-v2/TC-income-reports-v2-compare.spec.ts:180` |
 
 ### `regression/incomes/income-reports/cross-report.regression.spec.ts` _(project: no-retry)_
 

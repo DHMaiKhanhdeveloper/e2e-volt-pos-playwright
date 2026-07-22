@@ -7,6 +7,7 @@ import type { OrderDetail } from '@domains/orders/orderDetail';
 import {
   scrapeOrderDetail,
   scrapeOrderRow,
+  scrapeAllOrderRows,
   toOrderMoneyRow,
   scrapeIncomeDetailsPanel,
   scrapePaymentDetailsPanel,
@@ -263,12 +264,21 @@ export class DailySaleReportPage extends BasePage {
    *   - the route is single-source-of-truth — same effect.
    */
   async gotoDate(date: Date, activeChart: ChartKey = 'sale'): Promise<void> {
+    await this.gotoRange(date, date, activeChart);
+  }
+
+  /**
+   * Navigate straight to a date range via the URL, bypassing the calendar
+   * popover (same rationale as {@link gotoDate}). Caller unlocks the passcode
+   * afterwards, same as the sibling report pages' `gotoRange`.
+   */
+  async gotoRange(from: Date, to: Date, activeChart: ChartKey = 'sale'): Promise<void> {
     // Day boundaries in the SHOP's timezone (not the machine's) so the window is
     // correct regardless of where the test runs.
     const tz = shopTimezone(process.env.SHOP);
-    const from = zonedDayStartUnix(date, tz);
-    const to = zonedDayEndUnix(date, tz);
-    await this.page.goto(`${this.path}?from=${from}&to=${to}&activeChart=${activeChart}`);
+    const fromUnix = zonedDayStartUnix(from, tz);
+    const toUnix = zonedDayEndUnix(to, tz);
+    await this.page.goto(`${this.path}?from=${fromUnix}&to=${toUnix}&activeChart=${activeChart}`);
   }
 
   /** True if the "Today" button currently looks active (filled variant). */
@@ -281,6 +291,7 @@ export class DailySaleReportPage extends BasePage {
 
   /** All orderCodes currently rendered in the table body, in display order. */
   async allOrderCodes(): Promise<string[]> {
+    if (!(await this.ordersTable.isVisible().catch(() => false))) return [];
     const rows = this.ordersTable.locator('tbody tr');
     const count = await rows.count();
     const codes: string[] = [];
@@ -303,6 +314,9 @@ export class DailySaleReportPage extends BasePage {
    * step by ~viewport height and stop once the row count stops growing.
    */
   async scrollOrdersTableToEnd(maxSteps = 50): Promise<void> {
+    // On a day with zero orders the table never renders (a "No data
+    // available" placeholder shows instead) — nothing to scroll.
+    if (!(await this.ordersTable.isVisible().catch(() => false))) return;
     let previous = -1;
     for (let step = 0; step < maxSteps; step++) {
       const count = await this.ordersTable.evaluate((tableEl) => {
@@ -331,13 +345,20 @@ export class DailySaleReportPage extends BasePage {
    */
   async readAllOrderRows(): Promise<OrderMoneyRow[]> {
     await this.scrollOrdersTableToEnd();
-    const codes = await this.allOrderCodes();
-    const rows: OrderMoneyRow[] = [];
-    for (const code of codes) {
-      const r = await this.readOrderRow(code);
-      rows.push(toOrderMoneyRow(code, r));
-    }
-    return rows;
+    const raw = await scrapeAllOrderRows(this.ordersTable);
+    return raw.map((r) => toOrderMoneyRow(r.orderCode, r));
+  }
+
+  /**
+   * Same rows as {@link readAllOrderRows} but as the raw human-readable cell
+   * text (e.g. "$140.00") the screen displays, not the cents integers
+   * `toOrderMoneyRow` converts to for assertions.
+   */
+  async readAllOrderRowsRaw(): Promise<
+    Array<{ orderCode: string; sale: string; tip: string; tax: string; total: string }>
+  > {
+    await this.scrollOrdersTableToEnd();
+    return scrapeAllOrderRows(this.ordersTable);
   }
 
   // ---------------------------------------------------- income/payment details
