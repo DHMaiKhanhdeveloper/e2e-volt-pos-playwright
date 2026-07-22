@@ -71,6 +71,7 @@ export class PortalStaffPayrollPage {
     const url = `/pos/${shopId}/payroll?tab=staff-payroll&page=${page}&periodId=${periodId}`;
     await this.page.goto(url, { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
+    await this.waitForTableSettled();
   }
 
   /** Land on the tab's default period, then pick periods via {@link selectPeriod} instead of a fixed `periodId`. */
@@ -78,10 +79,56 @@ export class PortalStaffPayrollPage {
     const url = `/pos/${shopId}/payroll?tab=staff-payroll&page=${page}`;
     await this.page.goto(url, { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
+    await this.waitForTableSettled();
   }
 
   async waitForReady(): Promise<void> {
     await expect(this.table).toBeVisible({ timeout: 15_000 });
+  }
+
+  private async captureTableSnapshot(): Promise<string> {
+    return (
+      await this.table
+        .locator('tbody')
+        .innerText()
+        .catch(() => '')
+    ).trim();
+  }
+
+  /**
+   * The Portal keeps the `<table>` mounted while it re-fetches a new
+   * period's rows (unlike a full unmount/remount), so `waitForReady()`
+   * passing right after `selectPeriod()` does NOT mean the new period's data
+   * has actually rendered yet. Two failure modes were observed:
+   *  1. A transient empty/stale tbody right after the click (fixed by
+   *     polling for stability).
+   *  2. Some rows update in a first pass (e.g. to "0"/"$0.00" placeholders)
+   *     and only settle to their real values in a SECOND, slightly later
+   *     pass — a naive "stopped changing for one interval" check reports
+   *     settled too early and permanently freezes that row at the wrong
+   *     value. This caused false "Missing in POS" / "Mismatch" rows for
+   *     staff that in fact match (e.g. Andy/Linda on the Jun 28–29 period,
+   *     read as all-zero even though the real Portal UI shows their actual
+   *     orders/subtotal/tip).
+   * So: when a `beforeSnapshot` is given, first require the tbody content to
+   * differ from it at least once (proof the re-fetch actually landed) before
+   * counting stability — and require several consecutive stable reads, not
+   * just one, to ride out any second-pass correction.
+   */
+  private async waitForTableSettled(beforeSnapshot?: string): Promise<void> {
+    const REQUIRED_STABLE_READS = 3;
+    const MAX_ATTEMPTS = 30;
+    let previous: string | null = null;
+    let stableStreak = 0;
+    let sawChange = beforeSnapshot === undefined;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const current = await this.captureTableSnapshot();
+      if (!sawChange && current !== beforeSnapshot) sawChange = true;
+      stableStreak = current !== '' && current === previous ? stableStreak + 1 : 0;
+      if (sawChange && stableStreak >= REQUIRED_STABLE_READS) return;
+      previous = current;
+      await this.page.waitForTimeout(300);
+    }
   }
 
   /** Every option label currently listed in the period dropdown. */
@@ -99,9 +146,11 @@ export class PortalStaffPayrollPage {
 
   /** Pick a period preset by its exact dropdown label — must match the POS app's label text. */
   async selectPeriod(label: string): Promise<void> {
+    const before = await this.captureTableSnapshot();
     await this.periodDropdown.click();
     await this.page.getByRole('option', { name: label, exact: true }).click();
     await this.waitForReady();
+    await this.waitForTableSettled(before);
   }
 
   tableRows(): Locator {
@@ -154,8 +203,10 @@ export class PortalStaffPayrollPage {
         rows.push(await this.readRowResilient(i));
       }
       if (await this.nextPageButton.isDisabled()) break;
+      const before = await this.captureTableSnapshot();
       await this.nextPageButton.click();
       await this.waitForReady();
+      await this.waitForTableSettled(before);
     }
     return rows;
   }
@@ -189,8 +240,10 @@ export class PortalStaffPayrollPage {
       if (await this.nextPageButton.isDisabled()) {
         throw new Error(`Portal staff "${staff}" not found on any page`);
       }
+      const before = await this.captureTableSnapshot();
       await this.nextPageButton.click();
       await this.waitForReady();
+      await this.waitForTableSettled(before);
     }
   }
 

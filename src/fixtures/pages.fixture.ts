@@ -12,6 +12,7 @@ import { TimeTrackingPage } from '@pages/pos/TimeTrackingPage';
 import { EmployeeSettingsPage } from '@pages/settings/EmployeeSettingsPage';
 import { BusinessInfoPage } from '@pages/settings/BusinessInfoPage';
 import { LanguageSettingsPage } from '@pages/settings/LanguageSettingsPage';
+import { AccessibilitySettingsPage } from '@pages/settings/AccessibilitySettingsPage';
 import { AppointmentPage } from '@pages/pos/AppointmentPage';
 import { PasscodeDialog } from '@components/modal/PasscodeDialog';
 import { QuickPayDialog } from '@components/modal/QuickPayDialog';
@@ -31,6 +32,7 @@ export interface PagesFixture {
   employeeSettingsPage: EmployeeSettingsPage;
   businessInfoPage: BusinessInfoPage;
   languageSettingsPage: LanguageSettingsPage;
+  accessibilitySettingsPage: AccessibilitySettingsPage;
   appointmentPage: AppointmentPage;
   passcodeDialog: PasscodeDialog;
   quickPayDialog: QuickPayDialog;
@@ -76,6 +78,9 @@ export const pagesFixture = base.extend<PagesFixture>({
   },
   languageSettingsPage: async ({ page }, use) => {
     await use(new LanguageSettingsPage(page));
+  },
+  accessibilitySettingsPage: async ({ page }, use) => {
+    await use(new AccessibilitySettingsPage(page));
   },
   appointmentPage: async ({ page }, use) => {
     await use(new AppointmentPage(page));

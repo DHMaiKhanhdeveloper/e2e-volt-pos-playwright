@@ -123,8 +123,51 @@ export class StaffPayrollPage extends BasePage {
 
   /** Pick a period preset by its exact dropdown label (e.g. "Jul 9, 2026 - Jul 13, 2026"). */
   async selectPeriod(label: string): Promise<void> {
+    const before = await this.captureTableSnapshot();
     await this.periodDropdown.click();
     await this.page.getByRole('option', { name: label, exact: true }).click();
+    await this.waitForTableSettled(before);
+  }
+
+  private async captureTableSnapshot(): Promise<string> {
+    return (
+      await this.table
+        .locator('tbody')
+        .innerText()
+        .catch(() => '')
+    ).trim();
+  }
+
+  /**
+   * Switching periods re-fetches the roster asynchronously; the table can
+   * sit briefly empty, or still show the PREVIOUS period's rows, before the
+   * new period's data lands. Reading during either window silently produces
+   * a phantom "every staff missing in POS" comparison (this exact bug was
+   * already hit and fixed on the Portal side — see
+   * `PortalStaffPayrollPage.waitForTableSettled`). Mirror that fix here:
+   * require the tbody content to actually change from `before`, then hold
+   * steady for several consecutive reads, before considering it safe to
+   * read.
+   */
+  private async waitForTableSettled(before: string): Promise<void> {
+    const REQUIRED_STABLE_READS = 3;
+    const MAX_ATTEMPTS = 40;
+    let previous: string | null = null;
+    let stableStreak = 0;
+    let sawChange = false;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const current = await this.captureTableSnapshot();
+      // This screen's roster is never legitimately empty (see `rowCountSettled`),
+      // so a momentary "no rows yet" flash with placeholder/empty tbody text can
+      // otherwise look "stable" for 3 reads before the real roster lands — only
+      // count a read as stable once the table actually holds rows.
+      const rowCount = await this.tableRows().count();
+      if (!sawChange && current !== before) sawChange = true;
+      stableStreak = current !== '' && rowCount > 0 && current === previous ? stableStreak + 1 : 0;
+      if (sawChange && stableStreak >= REQUIRED_STABLE_READS) return;
+      previous = current;
+      await this.page.waitForTimeout(300);
+    }
   }
 
   async readAllStats(): Promise<Record<StaffPayrollStat, string>> {
@@ -163,7 +206,7 @@ export class StaffPayrollPage extends BasePage {
    */
   private async rowCountSettled(): Promise<number> {
     let count = await this.rowCount();
-    for (let attempt = 0; attempt < 10 && count === 0; attempt++) {
+    for (let attempt = 0; attempt < 20 && count === 0; attempt++) {
       await this.page.waitForTimeout(300);
       count = await this.rowCount();
     }

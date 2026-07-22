@@ -378,7 +378,7 @@ test.describe('Staff Payroll — cross-app parity (Volt POS vs Portal)', () => {
     // Clicking into per-staff detail panels on BOTH apps, for every period
     // the dropdown lists, is far slower than reading list tables alone —
     // the global 30s timeout (playwright.config.ts) isn't enough here.
-    test.setTimeout(10 * 60 * 1000);
+    test.setTimeout(25 * 60 * 1000);
 
     // Volt POS (local, passcode-gated) — plain context, no stored session
     // needed. `baseURL` must be overridden here: this spec runs under the

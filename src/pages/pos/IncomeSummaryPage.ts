@@ -39,8 +39,11 @@ const SHOP_TZ = shopTimezone(process.env.SHOP);
  * Like the Daily Sale Report, the route is passcode-gated and selectors lean on
  * visible text because Volt POS hasn't adopted `data-testid`.
  */
+/** `'v1'` is `/incomes/income-summary`; `'v2'` is the parallel `-v2` route under evaluation. */
+export type ReportVariant = 'v1' | 'v2';
+
 export class IncomeSummaryPage extends BasePage {
-  protected readonly path = '/incomes/income-summary';
+  protected readonly path: string;
 
   readonly heading: Locator;
   readonly periodDropdown: Locator;
@@ -49,9 +52,12 @@ export class IncomeSummaryPage extends BasePage {
   readonly table: Locator;
   readonly printButton: Locator;
 
-  constructor(page: Page) {
+  constructor(page: Page, variant: ReportVariant = 'v1') {
     super(page);
-    this.heading = page.getByText('Income Summary', { exact: true });
+    this.path = variant === 'v2' ? '/incomes/income-summary-v2' : '/incomes/income-summary';
+    this.heading = page.getByText(variant === 'v2' ? 'Income Summary V2' : 'Income Summary', {
+      exact: true,
+    });
     // The preset/year dropdown is the first combobox in the filter bar.
     this.periodDropdown = page.getByRole('combobox').first();
     this.groupByTabs = page.getByRole('tablist');
